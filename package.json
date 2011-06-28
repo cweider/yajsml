@@ -1,0 +1,16 @@
+{
+  "name": "yajsml"
+, "description": "Yet another (Common)JS module loader."
+, "keywords": ["commonjs", "require", "loader"]
+, "author": {
+		"name": "Chad Weider"
+	, "email": "cweider@oofn.net"
+	, "url": "http://oofn.net"
+  }
+, "dependencies": {}
+, "version": "1.0.0"
+, "repository": {
+    "type": "git"
+	, "url": "git://github.com/cweider/yajsml"
+  }
+}

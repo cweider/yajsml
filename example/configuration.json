@@ -1,0 +1,11 @@
+{
+  "instances": [
+    {
+      "rootPath": "/javascripts/src"
+    , "rootURI": "https://raw.github.com/Pita/etherpad-lite/master/static/js/"
+    , "associator": {
+        "type": "simple"
+      }
+    }
+  ]
+}
