@@ -24,6 +24,7 @@
   /* Storage */
   var main = null; // Reference to main module in `modules`.
   var modules = {}; // Repository of module objects build from `definitions`.
+  var definitions = {}; // Functions that construct `modules`.
   var loadingModules = {}; // Locks for detecting circular dependencies.
   var installWaiters = {}; // Locks for clearing duplicate requests.
   var installRequests = []; // Queue of pending requests.
@@ -249,27 +250,37 @@
     continuation();
   }
 
+  function moduleIsLoaded(path) {
+    return hasOwnProperty(modules, path);
+  }
+
   function loadModule(path, continuation) {
-    var module = modules[path];
     // If it's a function then it hasn't been exported yet. Run function and
     //  then replace with exports result.
-    if (module instanceof Function) {
+    if (!moduleIsLoaded(path)) {
       if (hasOwnProperty(loadingModules, path)) {
         var error = new Error("Encountered circurlar dependency.")
         continuation(error, undefined);
+      } else if (!moduleIsInstalled(path)) {
+        var error = new Error("Attempt to load undefined module.")
+        continuation(error, undefined);
+      } else if (definitions[path] === null) {
+        continuation(undefined, null);
       } else {
+        var definition = definitions[path];
         var _module = {id: path, exports: {}};
         var _require = requireRelativeTo(path.replace(/[^\/]+$/,''));
         if (!main) {
           main = _module;
         }
         loadingModules[path] = true;
-        module(_require, _module.exports, _module);
-        module = modules[path] = _module;
+        definition(_require, _module.exports, _module);
+        modules[path] = _module;
         delete loadingModules[path];
-        continuation(undefined, module);
+        continuation(undefined, _module);
       }
     } else {
+      var module = modules[path];
       continuation(undefined, module);
     }
   }
@@ -296,7 +307,7 @@
           });
         }
 
-        if (!hasOwnProperty(modules, path_)) {
+        if (!moduleIsInstalled(path_)) {
           fetchFunc(path_, after);
         } else {
           after();
@@ -342,6 +353,10 @@
   }
 
   /* Installation */
+  function moduleIsInstalled(path) {
+    return hasOwnProperty(definitions, path);
+  }
+
   function installModule(path, module) {
     if (typeof path != 'string'
       || !((module instanceof Function) || module === null)) {
@@ -349,10 +364,10 @@
           "Argument error: install must be given a (string, function) pair.");
     }
 
-    if (hasOwnProperty(modules, path)) {
+    if (moduleIsInstalled(path)) {
       // Drop import silently
     } else {
-      modules[path] = module;
+      definitions[path] = module;
     }
   }
 
