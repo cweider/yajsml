@@ -26,9 +26,9 @@
   var modules = {}; // Repository of module objects build from `definitions`.
   var definitions = {}; // Functions that construct `modules`.
   var loadingModules = {}; // Locks for detecting circular dependencies.
-  var installWaiters = {}; // Locks for clearing duplicate requests.
-  var installRequests = []; // Queue of pending requests.
-  var installRequest = undefined; // Lock for current resource request.
+  var definitionWaiters = {}; // Locks for clearing duplicate requires.
+  var fetchRequests = []; // Queue of pending requests.
+  var fetchRequest = undefined; // Lock for current resource request.
 
   var syncLock = undefined;
   var globalKeyPath = undefined;
@@ -153,34 +153,34 @@
 
   /* Modules */
   function fetchModule(path, continuation) {
-    if (hasOwnProperty(installWaiters, path)) {
-      installWaiters[path].push(continuation);
+    if (hasOwnProperty(definitionWaiters, path)) {
+      definitionWaiters[path].push(continuation);
     } else {
-      installWaiters[path] = [continuation];
-      scheduleFetchInstall(path);
+      definitionWaiters[path] = [continuation];
+      schedulefetchDefine(path);
     }
   }
 
-  function scheduleFetchInstall(path) {
-    installRequests.push(path);
-    if (installRequest === undefined) {
-      continueScheduledFetchInstalls();
+  function schedulefetchDefine(path) {
+    fetchRequests.push(path);
+    if (fetchRequest === undefined) {
+      continueScheduledfetchDefines();
     }
   }
 
-  function continueScheduledFetchInstalls() {
-    if (installRequests.length > 0) {
-      installRequest = installRequests.pop();
-      installWaiters[path].unshift(function () {
-        installRequest = undefined;
-        continueScheduledFetchInstalls();
+  function continueScheduledfetchDefines() {
+    if (fetchRequests.length > 0) {
+      fetchRequest = fetchRequests.pop();
+      definitionWaiters[fetchRequest].unshift(function () {
+        fetchRequest = undefined;
+        continueScheduledfetchDefines();
       });
-      var fetchFunc = globalKeyPath ? fetchInstallJSONP : fetchInstallXHR;
-      fetchFunc(installRequest);
+      var fetchFunc = globalKeyPath ? fetchDefineJSONP : fetchDefineXHR;
+      fetchFunc(fetchRequest);
     }
   }
 
-  function fetchInstallXHR(path) {
+  function fetchDefineXHR(path) {
     var request = createXMLHTTPObject();
     if (!request) {
       throw new Error("Error making remote request.")
@@ -195,16 +195,16 @@
               'return function (require, exports, module) {\n'
                 + request.responseText + '};\n')();
 
-          install(path, response);
+          define(path, response);
         } else {
-          install(path, null);
+          define(path, null);
         }
       }
     };
     request.send(null);
   }
 
-  function fetchInstallJSONP(path) {
+  function fetchDefineJSONP(path) {
     var head = document.head
       || document.getElementsByTagName('head')[0]
       || document.documentElement;
@@ -219,9 +219,9 @@
     if (JSONP_TIMEOUT < Infinity) {
       var timeoutId = setTimeout(function () {
         timeoutId = undefined;
-        install(path, null);
+        define(path, null);
       }, JSONP_TIMEOUT);
-      installWaiters[path].unshift(function () {
+      definitionWaiters[path].unshift(function () {
         timeoutId === undefined && clearTimeout(timeoutId);
       });
     }
@@ -243,9 +243,9 @@
           'return function (require, exports, module) {\n'
             + request.responseText + '};\n')();
 
-      install(path, response);
+      define(path, response);
     } else {
-      install(path, null);
+      define(path, null);
     }
     continuation();
   }
@@ -261,7 +261,7 @@
       if (hasOwnProperty(loadingModules, path)) {
         var error = new Error("Encountered circurlar dependency.")
         continuation(error, undefined);
-      } else if (!moduleIsInstalled(path)) {
+      } else if (!moduleIsDefined(path)) {
         var error = new Error("Attempt to load undefined module.")
         continuation(error, undefined);
       } else if (definitions[path] === null) {
@@ -312,7 +312,7 @@
           });
         }
 
-        if (!moduleIsInstalled(path_)) {
+        if (!moduleIsDefined(path_)) {
           fetchFunc(path_, after);
         } else {
           after();
@@ -329,7 +329,7 @@
     var wrappedContinuation = function (error, module) {
       if (error) {
         // Are the conditions for deadlock satisfied or not?
-        // TODO: This and install's satisfy should use a common deferral
+        // TODO: This and define's satisfy should use a common deferral
         // mechanism.
         setTimeout(function () {moduleAtPath(path, continuation)}, 0);
       } else {
@@ -357,44 +357,44 @@
     return module;
   }
 
-  /* Installation */
-  function moduleIsInstalled(path) {
+  /* Definition */
+  function moduleIsDefined(path) {
     return hasOwnProperty(definitions, path);
   }
 
-  function installModule(path, module) {
+  function defineModule(path, module) {
     if (typeof path != 'string'
       || !((module instanceof Function) || module === null)) {
       throw new Error(
-          "Argument error: install must be given a (string, function) pair.");
+          "Argument error: define must be given a (string, function) pair.");
     }
 
-    if (moduleIsInstalled(path)) {
+    if (moduleIsDefined(path)) {
       // Drop import silently
     } else {
       definitions[path] = module;
     }
   }
 
-  function installModules(moduleMap) {
+  function defineModules(moduleMap) {
     if (typeof moduleMap != 'object') {
-      throw new Error("Argument error: install must be given a object.");
+      throw new Error("Argument error: define must be given a object.");
     }
     for (var path in moduleMap) {
       if (hasOwnProperty(moduleMap, path)) {
-        installModule(path, moduleMap[path]);
+        defineModule(path, moduleMap[path]);
       }
     }
   }
 
-  function install(fullyQualifiedPathOrModuleMap, module) {
+  function define(fullyQualifiedPathOrModuleMap, module) {
     var moduleMap;
     if (arguments.length == 1) {
       moduleMap = fullyQualifiedPathOrModuleMap;
-      installModules(moduleMap);
+      defineModules(moduleMap);
     } else if (arguments.length == 2) {
       var path = fullyQualifiedPathOrModuleMap;
-      installModule(fullyQualifiedPathOrModuleMap, module);
+      defineModule(fullyQualifiedPathOrModuleMap, module);
       moduleMap = {};
       moduleMap[path] = module;
     } else {
@@ -406,9 +406,9 @@
     var continuations = [];
     for (var path in moduleMap) {
       if (hasOwnProperty(moduleMap, path)
-        && hasOwnProperty(installWaiters, path)) {
-        continuations.push.apply(continuations, installWaiters[path]);
-        delete installWaiters[path];
+        && hasOwnProperty(definitionWaiters, path)) {
+        continuations.push.apply(continuations, definitionWaiters[path]);
+        delete definitionWaiters[path];
       }
     }
     function satisfy() {
@@ -498,7 +498,7 @@
 
   var rootRequire = requireRelativeTo('/');
   rootRequire._modules = modules;
-  rootRequire.define = install;
+  rootRequire.define = define;
   rootRequire.setGlobalKeyPath = setGlobalKeyPath;
   rootRequire.setRootURI = setRootURI;
   rootRequire.setLibraryURI = setLibraryURI;
