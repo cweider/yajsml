@@ -273,11 +273,16 @@
         if (!main) {
           main = _module;
         }
-        loadingModules[path] = true;
-        definition(_require, _module.exports, _module);
-        modules[path] = _module;
-        delete loadingModules[path];
-        continuation(undefined, _module);
+        try {
+          loadingModules[path] = true;
+          definition(_require, _module.exports, _module);
+          modules[path] = _module;
+          delete loadingModules[path];
+          continuation(undefined, _module);
+        } catch (error) {
+          delete loadingModules[path];
+          continuation(error, undefined);
+        }
       }
     } else {
       var module = modules[path];
