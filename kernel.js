@@ -38,6 +38,9 @@
 
   var JSONP_TIMEOUT = 60 * 1000;
 
+  var CircularDependencyError = function () {Error.apply(this, arguments)};
+  CircularDependencyError.prototype = new Error();
+
   /* Utility */
   function hasOwnProperty(object, key) {
     // Object-independent because an object may define `hasOwnProperty`.
@@ -342,7 +345,8 @@
     //  then replace with exports result.
     if (!moduleIsLoaded(path)) {
       if (hasOwnProperty(loadingModules, path)) {
-        var error = new Error("Encountered circurlar dependency.")
+        var error =
+            new CircularDependencyError("Encountered circular dependency.")
         continuation(error, undefined);
       } else if (!moduleIsDefined(path)) {
         var error = new Error("Attempt to load undefined module.")
@@ -411,10 +415,14 @@
   function moduleAtPath(path, continuation) {
     var wrappedContinuation = function (error, module) {
       if (error) {
-        // Are the conditions for deadlock satisfied or not?
-        // TODO: This and define's satisfy should use a common deferral
-        // mechanism.
-        setTimeout(function () {moduleAtPath(path, continuation)}, 0);
+        if (error instanceof CircularDependencyError) {
+          // Are the conditions for deadlock satisfied or not?
+          // TODO: This and define's satisfy should use a common deferral
+          // mechanism.
+          setTimeout(function () {moduleAtPath(path, continuation)}, 0);
+        } else {
+          continuation(null);
+        }
       } else {
         continuation(module);
       }
