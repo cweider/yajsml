@@ -151,57 +151,37 @@
     return xmlhttp;
   }
 
-  /* Modules */
-  function fetchModule(path, continuation) {
-    if (hasOwnProperty(definitionWaiters, path)) {
-      definitionWaiters[path].push(continuation);
-    } else {
-      definitionWaiters[path] = [continuation];
-      schedulefetchDefine(path);
-    }
-  }
-
-  function schedulefetchDefine(path) {
-    fetchRequests.push(path);
-    if (fetchRequest === undefined) {
-      continueScheduledfetchDefines();
-    }
-  }
-
-  function continueScheduledfetchDefines() {
-    if (fetchRequests.length > 0) {
-      fetchRequest = fetchRequests.pop();
-      definitionWaiters[fetchRequest].unshift(function () {
-        fetchRequest = undefined;
-        continueScheduledfetchDefines();
-      });
-      var fetchFunc = globalKeyPath ? fetchDefineJSONP : fetchDefineXHR;
-      fetchFunc(fetchRequest);
-    }
-  }
-
-  function fetchDefineXHR(path) {
+  function fetchDefineXHR(path, async) {
     var request = createXMLHTTPObject();
     if (!request) {
       throw new Error("Error making remote request.")
     }
 
-    request.open('GET', URIForModulePath(path), true);
-    request.onreadystatechange = function (event) {
-      if (request.readyState == 4) {
-        if (request.status == 200) {
-          // Build module constructor.
-          var response = new Function(
-              'return function (require, exports, module) {\n'
-                + request.responseText + '};\n')();
+    function onComplete(request) {
+      // Build module constructor.
+      if (request.status == 200) {
+        var response = new Function(
+            'return function (require, exports, module) {\n'
+              + request.responseText + '};\n')();
 
-          define(path, response);
-        } else {
-          define(path, null);
-        }
+        define(path, response);
+      } else {
+        define(path, null);
       }
-    };
-    request.send(null);
+    }
+
+    request.open('GET', URIForModulePath(path), !!(async));
+    if (async) {
+      request.onreadystatechange = function (event) {
+        if (request.readyState == 4) {
+          onComplete(request);
+        }
+      };
+      request.send(null);
+    } else {
+      request.send(null);
+      onComplete(request);
+    }
   }
 
   function fetchDefineJSONP(path) {
@@ -229,24 +209,40 @@
     head.insertBefore(script, head.firstChild);
   }
 
-  function fetchModuleSync(path, continuation) {
-    var request = createXMLHTTPObject();
-    if (!request) {
-      throw new Error("Error making remote request.")
-    }
-
-    request.open('GET', URIForModulePath(path), false);
-    request.send(null);
-    if (request.status == 200) {
-      // Build module constructor.
-      var response = new Function(
-          'return function (require, exports, module) {\n'
-            + request.responseText + '};\n')();
-
-      define(path, response);
+  /* Modules */
+  function fetchModule(path, continuation) {
+    if (hasOwnProperty(definitionWaiters, path)) {
+      definitionWaiters[path].push(continuation);
     } else {
-      define(path, null);
+      definitionWaiters[path] = [continuation];
+      schedulefetchDefine(path);
     }
+  }
+
+  function schedulefetchDefine(path) {
+    fetchRequests.push(path);
+    if (fetchRequest === undefined) {
+      continueScheduledfetchDefines();
+    }
+  }
+
+  function continueScheduledfetchDefines() {
+    if (fetchRequests.length > 0) {
+      fetchRequest = fetchRequests.pop();
+      definitionWaiters[fetchRequest].unshift(function () {
+        fetchRequest = undefined;
+        continueScheduledfetchDefines();
+      });
+      if (globalKeyPath) {
+        fetchDefineJSONP(fetchRequest)
+      } else {
+        fetchDefineXHR(fetchRequest, true);
+      }
+    }
+  }
+
+  function fetchModuleSync(path, continuation) {
+    fetchDefineXHR(path, false);
     continuation();
   }
 
