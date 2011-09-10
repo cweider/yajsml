@@ -44,6 +44,55 @@
     return Object.prototype.hasOwnProperty.call(object, key);
   }
 
+  // See RFC 2396 Appendix B
+  var URI_EXPRESSION =
+      /^(([^:\/?#]+):)?(\/\/([^\/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?/;
+  function parseURI(uri) {
+    var match = uri.match(URI_EXPRESSION);
+    var location = match && {
+      scheme: match[2],
+      host: match[4],
+      path: match[5],
+      query: match[7],
+      fragment: match[9]
+    };
+    return location;
+  }
+
+  function joinURI(location) {
+    var uri = "";
+    if (location.scheme)
+      uri += location.scheme + ':';
+    if (location.host)
+      uri += "//" + location.host
+    if (location.path)
+      uri += location.path
+    if (location.query)
+      uri += "?" + location.query
+    if (uri.fragment)
+      uri += "#" + location.fragment
+
+    return uri;
+  }
+
+  function isSameDomain(uri) {
+    var host_uri =
+      (typeof location == "undefined") ? {} : parseURI(location.toString());
+    var uri = parseURI(uri);
+
+    return (uri.scheme === host_uri.scheme) && (uri.host === host_uri.host);
+  }
+
+  function mirroredURIForURI(uri) {
+    var host_uri =
+      (typeof location == "undefined") ? {} : parseURI(location.toString());
+    var uri = parseURI(uri);
+
+    uri.scheme = host_uri.scheme;
+    uri.host = host_uri.host;
+    return joinURI(uri);
+  }
+
   function normalizePath(path) {
     var pathComponents1 = path.split('/');
     var pathComponents2 = [];
@@ -151,8 +200,8 @@
     return xmlhttp;
   }
 
-  function fetchDefineXHR(path, async) {
-    var request = createXMLHTTPObject();
+  function getXHR(uri, async, callback, request) {
+    var request = request || createXMLHTTPObject();
     if (!request) {
       throw new Error("Error making remote request.")
     }
@@ -160,17 +209,13 @@
     function onComplete(request) {
       // Build module constructor.
       if (request.status == 200) {
-        var response = new Function(
-            'return function (require, exports, module) {\n'
-              + request.responseText + '};\n')();
-
-        define(path, response);
+        callback(undefined, request.responseText);
       } else {
-        define(path, null);
+        callback(true, undefined);
       }
     }
 
-    request.open('GET', URIForModulePath(path), !!(async));
+    request.open('GET', uri, !!(async));
     if (async) {
       request.onreadystatechange = function (event) {
         if (request.readyState == 4) {
@@ -181,6 +226,34 @@
     } else {
       request.send(null);
       onComplete(request);
+    }
+  }
+
+  function fetchDefineXHR(path, async) {
+    // If cross domain and request doesn't support such requests, go straight
+    // to mirrioring.
+
+    var callback = function (error, text) {
+      if (error) {
+        define(path, null);
+      } else {
+        var definition = new Function(
+            'return function (require, exports, module) {\n'
+              + text + '};\n')();
+        define(path, definition);
+      }
+    }
+
+    var uri = URIForModulePath(path);
+    if (isSameDomain(uri)) {
+      getXHR(uri, async, callback);
+    } else {
+      var request = createXMLHTTPObject();
+      if (request && request.withCredentials === undefined) {
+        getXHR(uri, async, callback, request);
+      } else {
+        getXHR(mirroredURIForURI(uri), async, callback);
+      }
     }
   }
 
