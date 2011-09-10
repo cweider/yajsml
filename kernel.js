@@ -229,6 +229,18 @@
     }
   }
 
+  function getXDR(uri, callback) {
+    var xdr = new XDomainRequest();
+    xdr.open('GET', uri);
+    xdr.error(function () {
+      callback(true, undefined);
+    });
+    xdr.onload(function () {
+      callback(undefined, request.responseText);
+    });
+    xdr.send();
+  }
+
   function fetchDefineXHR(path, async) {
     // If cross domain and request doesn't support such requests, go straight
     // to mirrioring.
@@ -251,6 +263,8 @@
       var request = createXMLHTTPObject();
       if (request && request.withCredentials === undefined) {
         getXHR(uri, async, callback, request);
+      } else if (async && (typeof XDomainRequest != "undefined")) {
+        getXDR(uri, callback);
       } else {
         getXHR(mirroredURIForURI(uri), async, callback);
       }
