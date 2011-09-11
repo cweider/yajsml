@@ -1,0 +1,19 @@
+<html>
+  <head>
+    <script type="text/javascript" src="/kernel.js"></script>
+    <script type="text/javascript">
+      if (typeof console == 'undefined') {
+        console = {
+          log: function (x) {alert(x)}
+        , dir: function (x) {alert(x)}
+        };
+      }
+      require.setRootURI('/root/');
+      require.setLibraryURI('/library/');
+      require.setGlobalKeyPath('require');
+    </script>
+    <script type="text/javascript" src="test.js"></script>
+  </head>
+  <body>
+  </body>
+</html>
