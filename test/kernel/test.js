@@ -24,7 +24,7 @@ var sys = require('sys');
 var fs = require('fs');
 var util = require('util');
 var pathutil = require('path');
-var requireForPaths = require('./mock_require').requireForPaths;
+var requireForPaths = require('../mock_require').requireForPaths;
 
 function assertEqual(expected, actual, reason) {
   if (expected == actual) {
@@ -47,7 +47,7 @@ function assertThrow(f, arguments) {
 }
 
 /* Test library resolution. */
-r = requireForPaths('root', 'library');
+r = requireForPaths('../root', '../library');
 assertEqual('1.js', r('1.js').value);
 assertEqual('/1.js', r('/1.js').value);
 /* Test suffix resolution. */
@@ -55,12 +55,12 @@ assertEqual('/1.js', r('/1').value);
 assertEqual(r('/1.js'), r('/1'));
 
 /* Test questionable 'extra' relative paths. */
-r = requireForPaths('root', 'library');
+r = requireForPaths('../root', '../library');
 assertEqual('/../root/1.js', r('/../root/1').value);
 assertEqual('/../library/1.js', r('../library/1').value);
 
 /* Test index resolution. */
-r = requireForPaths('index');
+r = requireForPaths('../index');
 assertEqual('/index.js', r('/').value);
 assertEqual('/index.js', r('/index').value);
 assertEqual('/index/index.js', r('/index/').value);
@@ -107,7 +107,7 @@ assertEqual('user/module3.js', r('user/module3').value);
 assertThrow(function () {require('user/module')});
 
 /* Test cycle detection */
-r = requireForPaths('cycles');
+r = requireForPaths('../cycles');
 assertThrow(function () {require('/one_cycle')});
 assertThrow(function () {require('/two_cycle')});
 assertThrow(function () {require('/three_cycle')});
