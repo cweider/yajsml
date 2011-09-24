@@ -4,4 +4,4 @@ satisfyModule = function (n) {
   modules.sort();
   console.log(modules.join(','))
 };
-require('/order/1');
+require('/order/1', function () {});
