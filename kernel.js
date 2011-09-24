@@ -285,7 +285,7 @@
       getXHR(uri, async, callback);
     } else {
       var request = createXMLHTTPObject();
-      if (request && request.withCredentials === undefined) {
+      if (request && request.withCredentials !== undefined) {
         getXHR(uri, async, callback, request);
       } else if (async && (typeof XDomainRequest != "undefined")) {
         getXDR(uri, callback);
