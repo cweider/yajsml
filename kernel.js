@@ -28,7 +28,8 @@
   var loadingModules = {}; // Locks for detecting circular dependencies.
   var definitionWaiters = {}; // Locks for clearing duplicate requires.
   var fetchRequests = []; // Queue of pending requests.
-  var fetchRequest = undefined; // Lock for current resource request.
+  var currentRequests = 0; // Synchronization for parallel requests.
+  var maximumRequests = 1;
 
   var syncLock = undefined;
   var globalKeyPath = undefined;
@@ -179,6 +180,16 @@
   }
 
   /* Remote */
+  function setRequestMaximum (value) {
+    value == parseInt(value);
+    if (value > 0) {
+      maximumRequests = value;
+      checkScheduledfetchDefines();
+    } else {
+      throw new Error("Argument Error: value must be a positive integer.")
+    }
+  }
+
   function setGlobalKeyPath (value) {
     globalKeyPath = value;
   }
@@ -311,17 +322,16 @@
 
   function schedulefetchDefine(path) {
     fetchRequests.push(path);
-    if (fetchRequest === undefined) {
-      continueScheduledfetchDefines();
-    }
+    checkScheduledfetchDefines();
   }
 
-  function continueScheduledfetchDefines() {
-    if (fetchRequests.length > 0) {
-      fetchRequest = fetchRequests.pop();
+  function checkScheduledfetchDefines() {
+    if (fetchRequests.length > 0 && currentRequests < maximumRequests) {
+      var fetchRequest = fetchRequests.pop();
+      currentRequests++;
       definitionWaiters[fetchRequest].unshift(function () {
-        fetchRequest = undefined;
-        continueScheduledfetchDefines();
+        currentRequests--;
+        checkScheduledfetchDefines();
       });
       if (globalKeyPath) {
         fetchDefineJSONP(fetchRequest)
@@ -591,6 +601,7 @@
   rootRequire._modules = modules;
   rootRequire._definitions = definitions;
   rootRequire.define = define;
+  rootRequire.setRequestMaximum = setRequestMaximum;
   rootRequire.setGlobalKeyPath = setGlobalKeyPath;
   rootRequire.setRootURI = setRootURI;
   rootRequire.setLibraryURI = setLibraryURI;
