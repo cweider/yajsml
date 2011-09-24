@@ -589,6 +589,7 @@
 
   var rootRequire = requireRelativeTo('/');
   rootRequire._modules = modules;
+  rootRequire._definitions = definitions;
   rootRequire.define = define;
   rootRequire.setGlobalKeyPath = setGlobalKeyPath;
   rootRequire.setRootURI = setRootURI;
