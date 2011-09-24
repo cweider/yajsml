@@ -343,7 +343,9 @@
         currentRequests--;
         checkScheduledfetchDefines();
       });
-      if (globalKeyPath) {
+      if (globalKeyPath
+        && ((typeof document != undefined)
+          && document.readyState && document.readyState != 'loading')) {
         fetchDefineJSONP(fetchRequest)
       } else {
         fetchDefineXHR(fetchRequest, true);
