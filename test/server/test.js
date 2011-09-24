@@ -33,7 +33,6 @@ if (args.length != 3) {
 var rootPath = args[0];
 var libraryPath = args[1];
 var testFile = args[2]
-var port = 8124;
 
 var Server = require('../../server').Server;
 var virtualPaths = {
@@ -41,7 +40,7 @@ var virtualPaths = {
 , '/library': new Server(libraryPath, true)
 };
 
-http.createServer(function (request, response) {
+var handler = function (request, response) {
   console.log(request.url);
 
   var url = urlutil.parse(request.url, true);
@@ -97,6 +96,10 @@ http.createServer(function (request, response) {
       });
     }
   }
-}).listen(port);
+};
 
-console.log('http://127.0.0.1:' + port + '/index.html');
+http.createServer(handler).listen(8124);
+http.createServer(handler).listen(8125);
+http.createServer(handler).listen(8126);
+
+console.log('http://localhost:' + 8124 + '/index.html');
