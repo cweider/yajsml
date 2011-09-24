@@ -29,7 +29,7 @@
   var definitionWaiters = {}; // Locks for clearing duplicate requires.
   var fetchRequests = []; // Queue of pending requests.
   var currentRequests = 0; // Synchronization for parallel requests.
-  var maximumRequests = 1;
+  var maximumRequests = 2;
 
   var syncLock = undefined;
   var globalKeyPath = undefined;
@@ -292,7 +292,7 @@
     var script = document.createElement('script');
     script.async = "async";
     script.defer = "defer";
-    script.type = "text/javascript";
+    script.type = "application/javascript";
     script.src = URIForModulePath(path)
       + '?callback=' + encodeURIComponent(globalKeyPath + '.define');
 
