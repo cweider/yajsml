@@ -63,6 +63,12 @@ var handler = function (request, response) {
   if (virtualPath) {
     url.pathname = url.pathname.slice(virtualPath.length);
     request.url = urlutil.format(url);
+    var writeHead = response.writeHead;
+    response.writeHead = function (status, headers) {
+      headers['Access-Control-Allow-Origin'] = '*';
+      response.writeHead = writeHead;
+      response.writeHead(status, headers);
+    };
     virtualPaths[virtualPath].handle(request, response);
   } else {
     var path;
