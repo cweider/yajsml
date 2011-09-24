@@ -259,18 +259,28 @@
     // If cross domain and request doesn't support such requests, go straight
     // to mirrioring.
 
+    var _globalKeyPath = globalKeyPath;
+
     var callback = function (error, text) {
       if (error) {
         define(path, null);
       } else {
-        var definition = new Function(
-            'return function (require, exports, module) {\n'
-              + text + '};\n')();
-        define(path, definition);
+        if (_globalKeyPath) {
+          var code = new Function(text);
+          code();
+        } else {
+          var definition = new Function(
+              'return function (require, exports, module) {\n'
+                + text + '};\n')();
+          define(path, definition);
+        }
       }
     }
 
     var uri = URIForModulePath(path);
+    if (_globalKeyPath) {
+      uri += '?callback=' + encodeURIComponent(globalKeyPath + '.define');
+    }
     if (isSameDomain(uri)) {
       getXHR(uri, async, callback);
     } else {
