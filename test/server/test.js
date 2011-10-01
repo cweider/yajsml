@@ -40,7 +40,7 @@ var virtualPaths = {
 , '/library': new Server(libraryPath, true)
 };
 
-var handler = function (request, response) {
+var handler = function (request, response) { setTimeout(function () {
   console.log(request.url);
 
   var url = urlutil.parse(request.url, true);
@@ -102,7 +102,7 @@ var handler = function (request, response) {
       });
     }
   }
-};
+}, 100)};
 
 http.createServer(handler).listen(8124);
 http.createServer(handler).listen(8125);
