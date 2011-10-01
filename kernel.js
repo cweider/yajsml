@@ -300,8 +300,11 @@
       || document.getElementsByTagName('head')[0]
       || document.documentElement;
     var script = document.createElement('script');
-    script.defer = "defer";
-    script.async = "async";
+    if (script.async !== undefined) {
+      script.async = "true";
+    } else {
+      script.defer = "true";
+    }
     script.type = "application/javascript";
     script.src = URIForModulePath(path)
       + '?callback=' + encodeURIComponent(globalKeyPath + '.define');
