@@ -1,12 +1,14 @@
-# Require-kernel #
+# YAJSML #
+
+## require-kernel ##
 
 This is a solid, unadorned implementation of the emerging [CommonJS module standard](http://wiki.commonjs.org/wiki/Modules/1.1).
 
-## Interface ##
+### Interface ###
 The kernel evaluates to an unnamed function that can be invoked in the following ways:
 
 * `module = require(path)`
-* `require(path1[, path2[, path3], function (module1, module2, module3) {})`
+* `require(path1[, path2[, ...]], function (module1[, module2[, ...]]) {})`
 
 The function has the following methods:
 
