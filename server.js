@@ -112,74 +112,61 @@ Server.prototype = new function () {
     });
   }
 
-  function headJSONP(path, modulePath, JSONPCallback, callback) {
-    if (JSONPCallback.length == 0) {
-      callback(400, {}, "400: The parameter `callback` must be non-empty.");
-    } else {
-      head(path, function (status, headers, content) {
-        headers = mixin({
-          'Content-Type': 'application/javascript; charset=utf-8'
-          }, headers);
-        callback(200, headers, content);
-      });
-    }
-  }
-
-  function getJSONP(path, modulePath, JSONPCallback, callback) {
-    get(path, function (status, headers, content) {
-      var definition;
-      if (status == 200) {
-        definition =
-          'function (require, exports, module) {'
-        + ('\n' + content).replace(/\n([^\n])/g, "\n    $1")
-        + '  }';
-      } else {
-        definition = 'null';
-      }
-
-      content = "";
-      content += JSONPCallback + '({\n';
-      content += '  ' + toJSLiteral(modulePath) + ': ' + definition;
-      content += '\n});\n';
-
-      headers['Content-Type'] = 'application/javascript; charset=utf-8';
-
-      callback(200, headers, content);
-    });
-  }
-
   function handle(request, response) {
     var url = require('url').parse(request.url, true);
     var path = pathutil.normalize(pathutil.join(this._basePath, url.pathname));
 
-    var _head = head;
-    var _get = get;
+    var respond = function (status, headers, content) {
+      response.writeHead(status, headers);
+      content && response.write(content);
+      response.end();
+    };
+
     if ('callback' in url.query) {
       var JSONPCallback = url.query['callback'];
+      if (JSONPCallback.length == 0) {
+        response.writeHead(400, {});
+        response.write("400: The parameter `callback` must be non-empty.")
+        response.end();
+        return;
+      }
+
       var modulePath = pathutil.normalize(url.pathname);
       if (this._isLibrary) {
         modulePath = modulePath.replace(/^\//, '');
       }
-      _head = function (path, callback) {
-        headJSONP(path, modulePath, JSONPCallback, callback);
-      };
-      _get = function (path, callback) {
-        getJSONP(path, modulePath, JSONPCallback, callback);
-      };
-    }
 
-    var respond = function (status, headers, content) {
-      response.writeHead(status, headers);
-      response.write(content);
-      response.end();
-    };
+      respond = (function (respond) {
+        return function (status, headers, content) {
+          var definition;
+          if (request.method == 'GET') {
+            if (status == 200) {
+              definition =
+                'function (require, exports, module) {'
+              + ('\n' + content).replace(/\n([^\n])/g, "\n    $1")
+              + '  }';
+            } else {
+              definition = 'null';
+            }
+
+            content = "";
+            content += JSONPCallback + '({\n';
+            content += '  ' + toJSLiteral(modulePath) + ': ' + definition;
+            content += '\n});\n';
+          }
+
+          headers['Content-Type'] = 'application/javascript; charset=utf-8';
+          respond(200, headers, content);
+        };
+      }(respond));
+    }
 
     if (request.method != 'HEAD' && request.method != 'GET') {
       response.writeHead(405, {'Allow': 'HEAD, GET'});
       response.write("405: Only HEAD or GET method are allowed.")
       response.end();
     } else {
-      _head(path, function (status, headers, content) {
+      head(path, function (status, headers, content) {
         var modifiedSince = request.headers['if-modified-since'];
         var modifiedLast = headers['Last-Modified'];
         if ((modifiedSince && modifiedLast)
@@ -190,7 +177,7 @@ Server.prototype = new function () {
           if (request.method == 'HEAD') {
             respond(status, headers);
           } else if (request.method == 'GET') {
-            _get(path, function (status, headers2, content) {
+            get(path, function (status, headers2, content) {
               respond(status, mixin(headers, headers2), content);
             });
           }
