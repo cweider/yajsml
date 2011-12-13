@@ -30,14 +30,14 @@ if (args.length != 3) {
   console.error("Arguments: root, lib, test");
   process.exit(1);
 }
-var rootPath = args[0];
-var libraryPath = args[1];
+var rootURI = 'file://' + pathutil.resolve(args[0]);
+var libraryURI = 'file://' + pathutil.resolve(args[1]);
 var testFile = args[2]
 
 var Server = require('../../server').Server;
 var virtualPaths = {
-  '/root': new Server(rootPath, false)
-, '/library': new Server(libraryPath, true)
+  '/root': new Server(rootURI, false)
+, '/library': new Server(libraryURI, true)
 };
 
 var handler = function (request, response) { setTimeout(function () {

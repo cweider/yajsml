@@ -21,6 +21,7 @@
 */
 
 var fs = require('fs');
+var urlutil = require('url');
 var pathutil = require('path');
 
 function hasOwnProperty(o, k) {
@@ -57,64 +58,150 @@ function mixin(object1, object2, objectN) {
   module with a designated package will be fullfilled with the contents of
   that package (typically through redirection).
 */
-function Server(basePath, isLibrary) {
-  this._basePath = basePath;
+
+var fs_client = (new function () {
+  var STATUS_MESSAGES = {
+    403: '403: Access denied.'
+  , 404: '404: File not found.'
+  , 405: '405: Only the HEAD or GET methods are allowed.'
+  , 500: '500: Error reading file.'
+  };
+
+  function request(options, callback) {
+    var path = options.path;
+    var method = options.method;
+
+    var response = new (require('events').EventEmitter);
+    response.setEncoding = function (encoding) {this._encoding = encoding};
+    response.statusCode = 504;
+    response.headers = {};
+
+    var request = new (require('events').EventEmitter);
+    request.end = function () {
+      if (options.method != 'HEAD' && options.method != 'GET') {
+        response.statusCode = 405;
+        response.headers['Allow'] = 'HEAD, GET';
+
+        callback(response);
+        response.emit('data', STATUS_MESSAGES[response.statusCode])
+        response.emit('end');
+      } else {
+        fs.stat(path, function (error, stats) {
+          if (error) {
+            if (error.code == 'ENOENT') {
+              response.StatusCode = 404;
+            } else if (error.code == 'EACCESS') {
+              response.StatusCode = 403;
+            } else {
+              response.StatusCode = 502;
+            }
+          } else if (stats.isFile()) {
+            var date = new Date()
+            var modifiedLast = new Date(stats.mtime);
+            var modifiedSince = (options.headers || {})['if-modified-since'];
+
+            response.headers['Date'] = date.toUTCString();
+            response.headers['Last-Modified'] = modifiedLast.toUTCString();
+
+            if (modifiedSince && modifiedLast
+                && modifiedSince >= modifiedLast) {
+              response.StatusCode = 304;
+            } else {
+              response.statusCode = 200;
+            }
+          } else {
+            response.StatusCode = 404;
+          }
+
+          if (method == 'HEAD') {
+            callback(response);
+            response.emit('end');
+          } else if (response.statusCode != 200) {
+            response.headers['Content-Type'] = 'text/plain; charset=utf-8';
+
+            callback(response);
+            response.emit('data', STATUS_MESSAGES[response.statusCode])
+            response.emit('end');
+          } else {
+            fs.readFile(path, function (error, text) {
+              if (error) {
+                if (error.code == 'ENOENT') {
+                  response.statusCode = 404;
+                } else if (error.code == 'EACCESS') {
+                  response.statusCode = 403;
+                } else {
+                  response.statusCode = 502;
+                }
+                response.headers['Content-Type'] = 'text/plain; charset=utf-8';
+
+                callback(response);
+                response.emit('data', STATUS_MESSAGES[response.statusCode])
+                response.emit('end');
+              } else {
+                response.statusCode = 200;
+                response.headers['Content-Type'] =
+                    'application/javascript; charset=utf-8';
+
+                callback(response);
+                response.emit('data', text);
+                response.emit('end');
+              }
+            });
+          }
+        });
+      }
+    };
+    return request;
+  }
+  this.request = request;
+}());
+
+function requestURL(url, method, headers, callback) {
+  var parsedURL = urlutil.parse(url);
+  var client = undefined;
+  if (parsedURL.protocol == 'file:') {
+    client = fs_client;
+  } else if (parsedURL.protocol == 'http:') {
+    client = require('http');
+  } else if (parsedURL.protocol == 'https:') {
+    client = require('https');
+  }
+  if (client) {
+    var request = client.request({
+      host: parsedURL.host
+    , port: parsedURL.port
+    , path: parsedURL.path
+    , method: method
+    , headers: headers
+    }, function (response) {
+      var buffer = undefined;
+      response.setEncoding('utf8');
+      response.on('data', function (chunk) {
+        buffer = buffer || '';
+        buffer += chunk;
+      });
+      response.on('close', function () {
+        callback(502, {});
+      });
+      response.on('end', function () {
+        callback(response.statusCode, response.headers, buffer);
+      });
+    });
+    request.on('error', function () {
+      callback(502, {});
+    });
+    request.end();
+  }
+}
+
+function Server(baseURI, isLibrary) {
+  this._baseURI = baseURI;
   this._isLibrary = !!isLibrary;
 }
 Server.prototype = new function () {
-  var fileStatusMessages = {
-    403: '403: Access denied.'
-  , 404: '404: File not found.'
-  , 500: '500: Error reading file.'
-  };
-  
-  function head(path, continuation) {
-    fs.stat(path, function (error, stats) {
-      var status = 500, headers = {}, content = "";
-      if (error) {
-        if (error.code == 'ENOENT') {
-          status = 404;
-        } else if (error.code == 'EACCESS') {
-          status = 403;
-        } else {
-          status = 500;
-        }
-      } else if (stats.isFile()) {
-        status = 200;
-        headers['Date'] = (new Date()).toUTCString();
-        headers['Last-Modified'] = (new Date(stats.mtime)).toUTCString();
-      } else {
-        status = 404;
-      }
-      continuation(status, headers);
-    });
-  }
-
-  function get(path, continuation) {
-    fs.readFile(path, function (error, text) {
-      var status = 500, headers = {}, content = undefined;
-      if (error) {
-        if (error.code == 'ENOENT') {
-          status = 404;
-        } else if (error.code == 'EACCESS') {
-          status = 403;
-        } else {
-          status = 500;
-        }
-        headers['Content-Type'] = 'text/plain; charset=utf-8';
-        continuation(status, headers, fileStatusMessages[status]);
-      } else {
-        status = 200;
-        content = text;
-        headers['Content-Type'] = 'application/javascript; charset=utf-8';
-        continuation(status, headers, content);
-      }
-    });
-  }
-
   function handle(request, response) {
     var url = require('url').parse(request.url, true);
-    var path = pathutil.normalize(pathutil.join(this._basePath, url.pathname));
+    var resourceURI = pathutil.join(this._baseURI, url.pathname);
 
     var respond = function (status, headers, content) {
       response.writeHead(status, headers);
@@ -163,32 +250,38 @@ Server.prototype = new function () {
 
     if (request.method != 'HEAD' && request.method != 'GET') {
       response.writeHead(405, {'Allow': 'HEAD, GET'});
-      response.write("405: Only HEAD or GET method are allowed.")
+      response.write("405: Only the HEAD or GET methods are allowed.")
       response.end();
     } else {
-      head(path, function (status, headers, content) {
-        var modifiedSince = request.headers['if-modified-since'];
-        var modifiedLast = headers['Last-Modified'];
-        if ((modifiedSince && modifiedLast)
-            && (new Date(modifiedSince) >= new Date(modifiedLast))) {
-          response.writeHead(304, headers);
-          response.end();
-        } else if (status == 200) {
-          if (request.method == 'HEAD') {
+      var requestHeaders = {
+        'user-agent': 'yajsml'
+      , 'accept': '*/*'
+      , 'if-modified-since': request.headers['if-modified-since']
+      }
+      requestURL(resourceURI, 'HEAD', requestHeaders,
+        function (status, headers, content) {
+          if (status == 304) { // Skip the content, since it didn't change.
             respond(status, headers);
-          } else if (request.method == 'GET') {
-            get(path, function (status, headers2, content) {
-              respond(status, mixin(headers, headers2), content);
-            });
-          }
-        } else {
-          if (request.method == 'HEAD') {
+          } else if (request.method == 'HEAD' && status != 405) {
             respond(status, headers);
-          } else if (request.method == 'GET') {
-            respond(status, headers, content);
+          } else {
+            requestURL(resourceURI, 'GET', requestHeaders,
+              function (status, headers, content) {
+                var responseHeaders = {
+                  'date': headers['date']
+                , 'last-modified': headers['last-modified']
+                , 'content-type': headers['content-type']
+                }
+                if (request.method == 'HEAD') {
+                  respond(status, headers);
+                } else if (request.method == 'GET') {
+                  respond(status, headers, content);
+                }
+              }
+            );
           }
         }
-      });
+      );
     }
   }
 
