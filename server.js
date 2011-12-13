@@ -194,14 +194,25 @@ function requestURL(url, method, headers, callback) {
   }
 }
 
-function Server(baseURI, isLibrary) {
-  this._baseURI = baseURI;
-  this._isLibrary = !!isLibrary;
+function Server(rootURI, libraryURI) {
+  this._rootURI = rootURI;
+  this._libraryURI = libraryURI;
 }
 Server.prototype = new function () {
   function handle(request, response) {
     var url = require('url').parse(request.url, true);
-    var resourceURI = pathutil.join(this._baseURI, url.pathname);
+    var parts = pathutil.normalize(url.pathname).split('/').slice(1);
+    var path = '/' + parts.slice(1).join('/');
+    var source = parts[0];
+
+    var resourceURI = null;
+    if (source == 'root') {
+      resourceURI = this._rootURI + path;
+    } else if (source == 'library') {
+      resourceURI = this._libraryURI + path;
+    } else {
+      // Something has gone wrong.
+    }
 
     var respond = function (status, headers, content) {
       response.writeHead(status, headers);
@@ -218,8 +229,8 @@ Server.prototype = new function () {
         return;
       }
 
-      var modulePath = pathutil.normalize(url.pathname);
-      if (this._isLibrary) {
+      var modulePath = path;
+      if (source == 'library') {
         modulePath = modulePath.replace(/^\//, '');
       }
 

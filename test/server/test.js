@@ -35,41 +35,23 @@ var libraryURI = 'file://' + pathutil.resolve(args[1]);
 var testFile = args[2]
 
 var Server = require('../../server').Server;
-var virtualPaths = {
-  '/root': new Server(rootURI, false)
-, '/library': new Server(libraryURI, true)
-};
+var server = new Server(rootURI, libraryURI);
 
 var handler = function (request, response) { setTimeout(function () {
   console.log(request.url);
 
   var url = urlutil.parse(request.url, true);
   var requestPath = pathutil.normalize(url.pathname);
-  var path;
-  var basePath;
-  var realPath;
-  var virtualPath;
-  for (virtualPath in virtualPaths) {
-    if (Object.prototype.hasOwnProperty.call(virtualPaths, virtualPath)) {
-      var testPath = requestPath.slice(0, virtualPath.length);
-      if (testPath == virtualPath) {
-        break;
-      } else {
-        virtualPath = undefined;
-      }
-    }
-  }
+  var virtualPath = requestPath.split('/')[1];
 
-  if (virtualPath) {
-    url.pathname = url.pathname.slice(virtualPath.length);
-    request.url = urlutil.format(url);
+  if (virtualPath == 'root' || virtualPath == 'library') {
     var writeHead = response.writeHead;
     response.writeHead = function (status, headers) {
       headers['Access-Control-Allow-Origin'] = '*';
       response.writeHead = writeHead;
       response.writeHead(status, headers);
     };
-    virtualPaths[virtualPath].handle(request, response);
+    server.handle(request, response);
   } else {
     var path;
     var prefix = '';
