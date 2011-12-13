@@ -35,7 +35,7 @@ var libraryURI = 'file://' + pathutil.resolve(args[1]);
 var testFile = args[2]
 
 var Server = require('../../server').Server;
-var server = new Server(rootURI, libraryURI);
+var server = new Server({rootURI: rootURI, libraryURI: libraryURI});
 
 var handler = function (request, response) { setTimeout(function () {
   console.log(request.url);

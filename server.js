@@ -194,9 +194,42 @@ function requestURL(url, method, headers, callback) {
   }
 }
 
-function Server(rootURI, libraryURI) {
-  this._rootURI = rootURI;
-  this._libraryURI = libraryURI;
+function validateURI(uri) {
+  var parsed = urlutil.parse(uri);
+  if (parsed.protocol != 'file:'
+      && parsed.protocol != 'http:'
+      && parsed.protocol != 'https:') {
+    throw "Invalid URI: " + JSON.stringify(uri) + ".";
+  }
+}
+
+function Server(options) {
+  if (options.rootURI) {
+    this._rootURI = options.rootURI.replace(/[\/]+$/,'');
+    validateURI(this._rootURI);
+    if (options['rootPath'] || options['rootPath'] == '') {
+      this._rootPath = options.rootPath.toString();
+    } else {
+      this._rootPath = 'root';
+    }
+  }
+
+  if (options.libraryURI) {
+    this._libraryURI = options.libraryURI.replace(/[\/]+$/,'');
+    validateURI(this._rootURI);
+    if (options['libraryPath'] || options['libraryPath'] == '') {
+      this._libraryPath = options.libraryPath.toString();
+    } else {
+      this._libraryPath = 'library';
+    }
+  }
+
+  if (this._rootPath && this._libraryPath
+      && (this._rootPath.indexOf(this._libraryPath) == 0
+        || this._libraryPath.indexOf(this._rootPath) == 0)) {
+    throw "The paths " + JSON.stringify(this._rootPath) + " and " +
+        JSON.stringify(this._libraryPath) + " are ambiguous.";
+  }
 }
 Server.prototype = new function () {
   function handle(request, response) {
@@ -206,9 +239,9 @@ Server.prototype = new function () {
     var source = parts[0];
 
     var resourceURI = null;
-    if (source == 'root') {
+    if (source == this._rootPath) {
       resourceURI = this._rootURI + path;
-    } else if (source == 'library') {
+    } else if (this._libraryURI && source == this._libraryPath) {
       resourceURI = this._libraryURI + path;
     } else {
       // Something has gone wrong.
