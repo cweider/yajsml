@@ -86,13 +86,13 @@ Server.prototype = new function () {
       } else {
         status = 404;
       }
-      continuation(status, headers, content || fileStatusMessages[status]);
+      continuation(status, headers);
     });
   }
 
   function get(path, continuation) {
     fs.readFile(path, function (error, text) {
-      var status = 500, headers = {}, content = "";
+      var status = 500, headers = {}, content = undefined;
       if (error) {
         if (error.code == 'ENOENT') {
           status = 404;
@@ -101,11 +101,14 @@ Server.prototype = new function () {
         } else {
           status = 500;
         }
+        headers['Content-Type'] = 'text/plain; charset=utf-8';
+        continuation(status, headers, fileStatusMessages[status]);
       } else {
         status = 200;
         content = text;
+        headers['Content-Type'] = 'application/javascript; charset=utf-8';
+        continuation(status, headers, content);
       }
-      continuation(status, headers, content || fileStatusMessages[status]);
     });
   }
 
@@ -139,6 +142,8 @@ Server.prototype = new function () {
       content += '  ' + toJSLiteral(modulePath) + ': ' + definition;
       content += '\n});\n';
 
+      headers['Content-Type'] = 'application/javascript; charset=utf-8';
+
       callback(200, headers, content);
     });
   }
@@ -164,21 +169,9 @@ Server.prototype = new function () {
     }
 
     var respond = function (status, headers, content) {
-      if (status == 200) {
-        headers = mixin({
-          'Content-Type': 'application/javascript; charset=utf-8'
-          }, headers);
-        response.writeHead(status, headers);
-        content && response.write(content);
-        response.end();
-      } else {
-        headers = mixin({
-          'Content-Type': 'text/plain; charset=utf-8'
-          }, headers);
-        response.writeHead(status, headers);
-        response.write(content);
-        response.end();
-      }
+      response.writeHead(status, headers);
+      response.write(content);
+      response.end();
     };
 
     if (request.method != 'HEAD' && request.method != 'GET') {
