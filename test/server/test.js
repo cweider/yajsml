@@ -34,9 +34,6 @@ var rootURI = 'file://' + pathutil.resolve(args[0]);
 var libraryURI = 'file://' + pathutil.resolve(args[1]);
 var testFile = args[2]
 
-rootURI = 'https://raw.github.com/cweider/modulizer/master/test/root/'
-libraryURI = 'https://raw.github.com/cweider/modulizer/master/test/lib/'
-
 var Server = require('../../server').Server;
 var server = new Server({rootURI: rootURI, libraryURI: libraryURI});
 
