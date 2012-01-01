@@ -39,8 +39,16 @@
 
   var JSONP_TIMEOUT = 60 * 1000;
 
-  var CircularDependencyError = function () {Error.apply(this, arguments)};
-  CircularDependencyError.prototype = new Error();
+  function CircularDependencyError(message) {
+    this.name = "CircularDependencyError";
+    this.message = message;
+  };
+  CircularDependencyError.prototype = Error.prototype;
+  function ArgumentError(message) {
+    this.name = "ArgumentError";
+    this.message = message;
+  };
+  ArgumentError.prototype = Error.prototype;
 
   /* Utility */
   function hasOwnProperty(object, key) {
@@ -148,7 +156,7 @@
 
   function setRootURI(URI) {
     if (!URI) {
-      throw new Error("Argument Error: invalid root URI.");
+      throw new ArgumentError("Invalid root URI.");
     }
     rootURI = (URI.charAt(URI.length-1) == '/' ? URI.slice(0,-1) : URI);
   }
@@ -186,7 +194,7 @@
       maximumRequests = value;
       checkScheduledfetchDefines();
     } else {
-      throw new Error("Argument Error: value must be a positive integer.")
+      throw new ArgumentError("Value must be a positive integer.")
     }
   }
 
@@ -481,8 +489,8 @@
   function defineModule(path, module) {
     if (typeof path != 'string'
       || !((module instanceof Function) || module === null)) {
-      throw new Error(
-          "Argument error: define must be given a (string, function) pair.");
+      throw new ArgumentError(
+          "Definition must be a (string, function) pair.");
     }
 
     if (moduleIsDefined(path)) {
@@ -494,7 +502,7 @@
 
   function defineModules(moduleMap) {
     if (typeof moduleMap != 'object') {
-      throw new Error("Argument error: define must be given a object.");
+      throw new ArgumentError("Mapping must be an object.");
     }
     for (var path in moduleMap) {
       if (hasOwnProperty(moduleMap, path)) {
@@ -514,7 +522,7 @@
       moduleMap = {};
       moduleMap[path] = module;
     } else {
-      throw new Error("Argument error: expected 1 or 2 got "
+      throw new ArgumentError("Expected 1 or 2 arguments, but got "
           + arguments.length + ".");
     }
 
@@ -558,7 +566,7 @@
       return module.exports;
     } else {
       if (!(continuation instanceof Function)) {
-        throw new Error("Argument Error: continuation must be a function.");
+        throw new ArgumentError("Continuation must be a function.");
       }
 
       moduleAtPath(path, function (module) {
@@ -575,7 +583,7 @@
 
   function requireRelativeN(basePath, qualifiedPaths, continuation) {
     if (!(continuation instanceof Function)) {
-      throw new Error("Final argument must be a continuation.");
+      throw new ArgumentError("Final argument must be a continuation.");
     } else {
       // Copy and validate parameters
       var _qualifiedPaths = [];
@@ -621,4 +629,4 @@
   rootRequire.setRootURI = setRootURI;
   rootRequire.setLibraryURI = setLibraryURI;
   return rootRequire;
-})();
+}())
