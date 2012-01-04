@@ -54,28 +54,31 @@ var fs_client = (new function () {
         fs.stat(path, function (error, stats) {
           if (error) {
             if (error.code == 'ENOENT') {
-              response.StatusCode = 404;
+              response.statusCode = 404;
             } else if (error.code == 'EACCESS') {
-              response.StatusCode = 403;
+              response.statusCode = 403;
             } else {
-              response.StatusCode = 502;
+              response.statusCode = 502;
             }
           } else if (stats.isFile()) {
             var date = new Date()
             var modifiedLast = new Date(stats.mtime);
-            var modifiedSince = (options.headers || {})['if-modified-since'];
+            var modifiedSince = (options.headers || {})['If-Modified-Since'];
+            modifiedSince = modifiedSince && new Date(modifiedSince);
 
             response.headers['Date'] = date.toUTCString();
             response.headers['Last-Modified'] = modifiedLast.toUTCString();
 
+            console.log([modifiedSince, modifiedLast, modifiedSince >= modifiedLast])
+
             if (modifiedSince && modifiedLast
                 && modifiedSince >= modifiedLast) {
-              response.StatusCode = 304;
+              response.statusCode = 304;
             } else {
               response.statusCode = 200;
             }
           } else {
-            response.StatusCode = 404;
+            response.statusCode = 404;
           }
 
           if (method == 'HEAD') {
