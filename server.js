@@ -106,13 +106,37 @@ Server.prototype = new function () {
       // Something has gone wrong.
     }
 
-    var respond = function (status, headers, content) {
-      response.writeHead(status, headers);
-      content && response.write(content);
-      response.end();
+    var requestHeaders = {
+      'user-agent': 'yajsml'
+    , 'accept': '*/*'
+    , 'if-modified-since': request.headers['if-modified-since']
+    , 'cache-control': request.headers['cache-control']
     };
 
-    if ('callback' in url.query) {
+    if (request.method != 'HEAD' && request.method != 'GET') {
+      // I don't know how to do this.
+      response.writeHead(405, {'Allow': 'HEAD, GET'});
+      response.write("405: Only the HEAD or GET methods are allowed.")
+      response.end();
+    } else if (!('callback' in url.query)) {
+      // I respond with a straight-forward proxy.
+      requestURL(resourceURI, 'GET', requestHeaders,
+        function (status, headers, content) {
+          var responseHeaders = {
+            'date': headers['date']
+          , 'last-modified': headers['last-modified']
+          , 'cache-control': headers['cache-control']
+          , 'content-type': headers['content-type']
+          }
+
+          response.writeHead(status, headers);
+          if (request.method == 'GET') {
+            content && response.write(content);
+          }
+          response.end();
+        }
+      );
+    } else {
       var JSONPCallback = url.query['callback'];
       if (JSONPCallback.length == 0) {
         response.writeHead(400, {});
@@ -126,39 +150,37 @@ Server.prototype = new function () {
         modulePath = modulePath.replace(/^\//, '');
       }
 
-      respond = (function (respond) {
-        return function (status, headers, content) {
+      var respond = function (status, headers, content) {
+        if (request.method == 'GET') {
           var definition;
-          if (request.method == 'GET') {
-            if (status == 200) {
-              definition =
-                'function (require, exports, module) {\n' + content + '\n}';
-            } else {
-              definition = 'null';
-            }
-
-            content = "";
-            content += JSONPCallback + '({\n';
-            content += '  ' + toJSLiteral(modulePath) + ': ' + definition;
-            content += '\n});\n';
+          if (status == 200) {
+            definition =
+              'function (require, exports, module) {\n' + content + '\n}';
+          } else {
+            definition = 'null';
           }
 
-          headers['Content-Type'] = 'application/javascript; charset=utf-8';
-          respond(200, headers, content);
-        };
-      }(respond));
-    }
+          content =
+              JSONPCallback + '({\n'
+              + toJSLiteral(modulePath) + ': ' + definition
+              + '\n});\n'
+              ;
+        }
 
-    if (request.method != 'HEAD' && request.method != 'GET') {
-      response.writeHead(405, {'Allow': 'HEAD, GET'});
-      response.write("405: Only the HEAD or GET methods are allowed.")
-      response.end();
-    } else {
-      var requestHeaders = {
-        'user-agent': 'yajsml'
-      , 'accept': '*/*'
-      , 'if-modified-since': request.headers['if-modified-since']
-      }
+        var responseHeaders = {
+          'date': headers['date']
+        , 'last-modified': headers['last-modified']
+        , 'cache-control': headers['cache-control']
+        , 'content-type': 'application/javascript; charset=utf-8'
+        };
+
+        response.writeHead(200, headers);
+        if (request.method == 'GET') {
+          content && response.write(content);
+        }
+        response.end();
+      };
+
       requestURL(resourceURI, 'HEAD', requestHeaders,
         function (status, headers, content) {
           if (status == 304) { // Skip the content, since it didn't change.
