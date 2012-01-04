@@ -69,8 +69,6 @@ var fs_client = (new function () {
             response.headers['Date'] = date.toUTCString();
             response.headers['Last-Modified'] = modifiedLast.toUTCString();
 
-            console.log([modifiedSince, modifiedLast, modifiedSince >= modifiedLast])
-
             if (modifiedSince && modifiedLast
                 && modifiedSince >= modifiedLast) {
               response.statusCode = 304;
