@@ -50,6 +50,30 @@ function mixin(object1, object2, objectN) {
   return object;
 }
 
+function selectProperties(o, keys) {
+  var object = {};
+  for (var i = 0, ii = keys.length; i < ii; i++) {
+    var key = keys[i];
+    if (hasOwnProperty(o, key)) {
+      object[key] = o[key];
+    }
+  }
+  return object;
+}
+
+function capitalizeKeys(o) {
+  var object = {};
+  for (var key in o) {
+    if (hasOwnProperty(o, key)) {
+      var capitalizedKey = key.replace(/(^|-)([^-])/g, function (m, s, w) {
+        return s + w.toUpperCase();
+      });
+      object[capitalizedKey] = o[key];
+    }
+  }
+  return object;
+}
+
 function validateURI(uri) {
   var parsed = urlutil.parse(uri);
   if (parsed.protocol != 'file:'
@@ -106,12 +130,15 @@ Server.prototype = new function () {
       // Something has gone wrong.
     }
 
-    var requestHeaders = {
-      'user-agent': 'yajsml'
-    , 'accept': '*/*'
-    , 'if-modified-since': request.headers['if-modified-since']
-    , 'cache-control': request.headers['cache-control']
-    };
+    var requestHeaders = mixin({
+          'User-Agent': 'yajsml'
+        , 'Accept': '*/*'
+        }
+      , selectProperties(
+          capitalizeKeys(request.headers)
+        , ['If-Modified-Since', 'Cache-Control']
+        )
+      );
 
     if (request.method != 'HEAD' && request.method != 'GET') {
       // I don't know how to do this.
@@ -122,14 +149,11 @@ Server.prototype = new function () {
       // I respond with a straight-forward proxy.
       requestURL(resourceURI, 'GET', requestHeaders,
         function (status, headers, content) {
-          var responseHeaders = {
-            'date': headers['date']
-          , 'last-modified': headers['last-modified']
-          , 'cache-control': headers['cache-control']
-          , 'content-type': headers['content-type']
-          }
-
-          response.writeHead(status, headers);
+          var responseHeaders = selectProperties(
+              headers
+            , ['Date', 'Last-Modified', 'Cache-Control', 'Content-Type']
+            );
+          response.writeHead(status, responseHeaders);
           if (request.method == 'GET') {
             content && response.write(content);
           }
@@ -151,34 +175,43 @@ Server.prototype = new function () {
       }
 
       var respond = function (status, headers, content) {
-        if (request.method == 'GET') {
-          var definition;
-          if (status == 200) {
-            definition =
-              'function (require, exports, module) {\n' + content + '\n}';
-          } else {
-            definition = 'null';
+        var responseHeaders = mixin(
+            selectProperties(
+              headers
+            , ['Date', 'Last-Modified', 'Cache-Control', 'Content-Type']
+            )
+          , {
+              'Content-Type': 'application/javascript; charset=utf-8'
+            }
+          );
+
+        if (status == 304) {
+          response.writeHead(status, responseHeaders);
+          response.end();
+        } else {
+          if (request.method == 'GET') {
+            var definition;
+            if (status == 200) {
+              definition =
+                'function (require, exports, module) {\n' + content + '\n}';
+            } else {
+              definition = 'null';
+            }
+
+            content =
+                JSONPCallback + '({\n'
+                + toJSLiteral(modulePath) + ': ' + definition
+                + '\n});\n'
+                ;
           }
 
-          content =
-              JSONPCallback + '({\n'
-              + toJSLiteral(modulePath) + ': ' + definition
-              + '\n});\n'
-              ;
-        }
 
-        var responseHeaders = {
-          'date': headers['date']
-        , 'last-modified': headers['last-modified']
-        , 'cache-control': headers['cache-control']
-        , 'content-type': 'application/javascript; charset=utf-8'
-        };
-
-        response.writeHead(200, headers);
-        if (request.method == 'GET') {
-          content && response.write(content);
+          response.writeHead(200, responseHeaders);
+          if (request.method == 'GET') {
+            content && response.write(content);
+          }
+          response.end();
         }
-        response.end();
       };
 
       requestURL(resourceURI, 'HEAD', requestHeaders,
@@ -190,11 +223,6 @@ Server.prototype = new function () {
           } else {
             requestURL(resourceURI, 'GET', requestHeaders,
               function (status, headers, content) {
-                var responseHeaders = {
-                  'date': headers['date']
-                , 'last-modified': headers['last-modified']
-                , 'content-type': headers['content-type']
-                }
                 if (request.method == 'HEAD') {
                   respond(status, headers);
                 } else if (request.method == 'GET') {
