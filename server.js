@@ -132,9 +132,7 @@ Server.prototype = new function () {
           if (request.method == 'GET') {
             if (status == 200) {
               definition =
-                'function (require, exports, module) {'
-              + ('\n' + content).replace(/\n([^\n])/g, "\n    $1")
-              + '  }';
+                'function (require, exports, module) {\n' + content + '\n}';
             } else {
               definition = 'null';
             }
