@@ -167,6 +167,10 @@ Server.prototype = new function () {
               headers
             , ['date', 'last-modified', 'cache-control', 'content-type']
             );
+          if (status == 200 && ('content-type' in responseHeaders)) {
+            responseHeaders['content-type'] =
+                'application/javascript; charset=utf-8'
+          }
           response.writeHead(status, responseHeaders);
           if (request.method == 'GET') {
             content && response.write(content);

@@ -40,7 +40,7 @@ Connect.createServer(
         'content-type'
       , 'accept'
       , 'date'
-      , 'ff-modified-since'
+      , 'if-modified-since'
       , 'last-modified'
       , 'expires'
       , 'etag'
