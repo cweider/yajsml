@@ -155,11 +155,16 @@ Server.prototype = new function () {
 
     if (request.method != 'HEAD' && request.method != 'GET') {
       // I don't know how to do this.
-      response.writeHead(405, {'Allow': 'HEAD, GET'});
+      response.writeHead(405, {
+        'Allow': 'HEAD, GET'
+      , 'Content-Type': 'text/plain; charset=utf-8'
+      });
       response.write("405: Only the HEAD or GET methods are allowed.")
       response.end();
     } else if (!resourceURI) {
-      response.writeHead(400);
+      response.writeHead(400, {
+        'Content-Type': 'text/plain; charset=utf-8'
+      });
       response.write("400: The requested resource could not be found.")
       response.end();
     } else if (!('callback' in url.query)) {
@@ -180,7 +185,9 @@ Server.prototype = new function () {
     } else {
       var JSONPCallback = url.query['callback'];
       if (JSONPCallback.length == 0) {
-        response.writeHead(400, {});
+        response.writeHead(400, {
+          'Content-Type': 'text/plain; charset=utf-8'
+        });
         response.write("400: The parameter `callback` must be non-empty.")
         response.end();
         return;
