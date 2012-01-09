@@ -61,19 +61,6 @@ function selectProperties(o, keys) {
   return object;
 }
 
-function capitalizeKeys(o) {
-  var object = {};
-  for (var key in o) {
-    if (hasOwnProperty(o, key)) {
-      var capitalizedKey = key.replace(/(^|-)([^-])/g, function (m, s, w) {
-        return s + w.toUpperCase();
-      });
-      object[capitalizedKey] = o[key];
-    }
-  }
-  return object;
-}
-
 function validateURI(uri) {
   var parsed = urlutil.parse(uri);
   if (parsed.protocol != 'file:'
@@ -149,26 +136,26 @@ Server.prototype = new function () {
     }
 
     var requestHeaders = mixin({
-          'User-Agent': 'yajsml'
-        , 'Accept': '*/*'
+          'user-agent': 'yajsml'
+        , 'accept': '*/*'
         }
       , selectProperties(
-          capitalizeKeys(request.headers)
-        , ['If-Modified-Since', 'Cache-Control']
+          request.headers
+        , ['if-modified-since', 'Cache-Control']
         )
       );
 
     if (request.method != 'HEAD' && request.method != 'GET') {
       // I don't know how to do this.
       response.writeHead(405, {
-        'Allow': 'HEAD, GET'
-      , 'Content-Type': 'text/plain; charset=utf-8'
+        'allow': 'HEAD, GET'
+      , 'content-type': 'text/plain; charset=utf-8'
       });
       response.write("405: Only the HEAD or GET methods are allowed.")
       response.end();
     } else if (!resourceURI) {
       response.writeHead(400, {
-        'Content-Type': 'text/plain; charset=utf-8'
+        'content-type': 'text/plain; charset=utf-8'
       });
       response.write("400: The requested resource could not be found.")
       response.end();
@@ -178,7 +165,7 @@ Server.prototype = new function () {
         function (status, headers, content) {
           var responseHeaders = selectProperties(
               headers
-            , ['Date', 'Last-Modified', 'Cache-Control', 'Content-Type']
+            , ['date', 'last-modified', 'cache-control', 'content-type']
             );
           response.writeHead(status, responseHeaders);
           if (request.method == 'GET') {
@@ -191,7 +178,7 @@ Server.prototype = new function () {
       var JSONPCallback = url.query['callback'];
       if (JSONPCallback.length == 0) {
         response.writeHead(400, {
-          'Content-Type': 'text/plain; charset=utf-8'
+          'content-type': 'text/plain; charset=utf-8'
         });
         response.write("400: The parameter `callback` must be non-empty.")
         response.end();
@@ -209,10 +196,10 @@ Server.prototype = new function () {
         var responseHeaders = mixin(
             selectProperties(
               headers
-            , ['Date', 'Last-Modified', 'Cache-Control', 'Content-Type']
+            , ['date', 'last-modified', 'cache-control', 'content-type']
             )
           , {
-              'Content-Type': 'application/javascript; charset=utf-8'
+              'tontent-type': 'application/javascript; charset=utf-8'
             }
           );
 

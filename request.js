@@ -45,7 +45,7 @@ var fs_client = (new function () {
     request.end = function () {
       if (options.method != 'HEAD' && options.method != 'GET') {
         response.statusCode = 405;
-        response.headers['Allow'] = 'HEAD, GET';
+        response.headers['allow'] = 'HEAD, GET';
 
         callback(response);
         response.emit('data', STATUS_MESSAGES[response.statusCode])
@@ -63,11 +63,11 @@ var fs_client = (new function () {
           } else if (stats.isFile()) {
             var date = new Date()
             var modifiedLast = new Date(stats.mtime);
-            var modifiedSince = (options.headers || {})['If-Modified-Since'];
+            var modifiedSince = (options.headers || {})['if-modified-since'];
             modifiedSince = modifiedSince && new Date(modifiedSince);
 
-            response.headers['Date'] = date.toUTCString();
-            response.headers['Last-Modified'] = modifiedLast.toUTCString();
+            response.headers['date'] = date.toUTCString();
+            response.headers['last-modified'] = modifiedLast.toUTCString();
 
             if (modifiedSince && modifiedLast
                 && modifiedSince >= modifiedLast) {
@@ -83,7 +83,7 @@ var fs_client = (new function () {
             callback(response);
             response.emit('end');
           } else if (response.statusCode != 200) {
-            response.headers['Content-Type'] = 'text/plain; charset=utf-8';
+            response.headers['content-type'] = 'text/plain; charset=utf-8';
 
             callback(response);
             response.emit('data', STATUS_MESSAGES[response.statusCode])
@@ -98,14 +98,14 @@ var fs_client = (new function () {
                 } else {
                   response.statusCode = 502;
                 }
-                response.headers['Content-Type'] = 'text/plain; charset=utf-8';
+                response.headers['content-type'] = 'text/plain; charset=utf-8';
 
                 callback(response);
                 response.emit('data', STATUS_MESSAGES[response.statusCode])
                 response.emit('end');
               } else {
                 response.statusCode = 200;
-                response.headers['Content-Type'] =
+                response.headers['content-type'] =
                     'application/javascript; charset=utf-8';
 
                 callback(response);
