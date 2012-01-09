@@ -134,7 +134,7 @@ Server.prototype = new function () {
     var url = require('url').parse(request.url, true);
     var path = pathutil.normalize(url.pathname);
 
-    var resourceURI = null;
+    var resourceURI;
     if (path.indexOf(this._rootPath) == 0) {
       resourceURI = this._rootURI + path.slice(this._rootPath.length);
     } else if (this._libraryURI && path.indexOf(this._libraryPath) == 0) {
@@ -157,6 +157,10 @@ Server.prototype = new function () {
       // I don't know how to do this.
       response.writeHead(405, {'Allow': 'HEAD, GET'});
       response.write("405: Only the HEAD or GET methods are allowed.")
+      response.end();
+    } else if (!resourceURI) {
+      response.writeHead(400);
+      response.write("400: The requested resource could not be found.")
       response.end();
     } else if (!('callback' in url.query)) {
       // I respond with a straight-forward proxy.
