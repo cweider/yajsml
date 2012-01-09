@@ -135,10 +135,15 @@ Server.prototype = new function () {
     var path = pathutil.normalize(url.pathname);
 
     var resourceURI;
+    var isLibraryResource;
     if (path.indexOf(this._rootPath) == 0) {
-      resourceURI = this._rootURI + path.slice(this._rootPath.length);
+      path = path.slice(this._rootPath.length);
+      resourceURI = this._rootURI + path;
+      isLibraryResource = false;
     } else if (this._libraryURI && path.indexOf(this._libraryPath) == 0) {
-      resourceURI = this._libraryURI + path.slice(this._libraryPath.length);
+      path = path.slice(this._libraryPath.length);
+      resourceURI = this._libraryURI + path;
+      isLibraryResource = true;
     } else {
       // Something has gone wrong.
     }
@@ -193,9 +198,11 @@ Server.prototype = new function () {
         return;
       }
 
-      var modulePath = path;
-      if (source == 'library') {
-        modulePath = modulePath.replace(/^\//, '');
+      var modulePath;
+      if (isLibraryResource) {
+        modulePath = path.replace(/^\//, '');
+      } else {
+        modulePath = path.charAt(0) == '/' ? path : '/' + path;
       }
 
       var respond = function (status, headers, content) {
