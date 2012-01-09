@@ -49,5 +49,5 @@ Connect.createServer(
     })
 , Connect.cookieParser()
 , Ugly()
-, function (req, res, next) {return server.handle(req, res)}
+, server
 ).listen(3000);
