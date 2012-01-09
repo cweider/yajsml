@@ -31,8 +31,8 @@ module.exports = function (options) {
     
     res.writeHead = function (status, headers) {
       if (headers
-          && headers['Content-Type']
-          && headers['Content-Type'].indexOf('application/javascript;') == 0
+          && headers['content-type']
+          && headers['content-type'].indexOf('application/javascript;') == 0
           && req.cookies && req.cookies['js-compress-override'] != 'disable'
           ) {
         var buffer = '';

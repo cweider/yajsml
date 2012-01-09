@@ -37,14 +37,14 @@ Connect.createServer(
       origins: ['*']
     , methods: ['HEAD', 'GET']
     , headers: [
-        'Content-Type'
-      , 'Accept'
-      , 'Date'
-      , 'If-Modified-Since'
-      , 'Last-Modified'
-      , 'Expires'
-      , 'ETag'
-      , 'Cache-Control'
+        'content-type'
+      , 'accept'
+      , 'date'
+      , 'ff-modified-since'
+      , 'last-modified'
+      , 'expires'
+      , 'etag'
+      , 'cache-control'
       ]
     })
 , Connect.cookieParser()
