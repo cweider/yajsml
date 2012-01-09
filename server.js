@@ -87,23 +87,38 @@ function validateURI(uri) {
   I implement a JavaScript module server.
 */
 function Server(options) {
+  function trailingSlash(path) {
+    if (path.charAt(path.length) != '/') {
+      return path + '/';
+    } else {
+      return path;
+    }
+  }
+  function leadingSlash(path) {
+    if (path.charAt(0) != '/') {
+      return '/' + path;
+    } else {
+      return path;
+    }
+  }
+
   if (options.rootURI) {
-    this._rootURI = options.rootURI.replace(/[\/]+$/,'');
+    this._rootURI = trailingSlash(options.rootURI);
     validateURI(this._rootURI);
     if (options['rootPath'] || options['rootPath'] == '') {
-      this._rootPath = options.rootPath.toString();
+      this._rootPath = trailingSlash(options.rootPath.toString());
     } else {
-      this._rootPath = 'root';
+      this._rootPath = 'root/';
     }
   }
 
   if (options.libraryURI) {
-    this._libraryURI = options.libraryURI.replace(/[\/]+$/,'');
+    this._libraryURI = trailingSlash(options.libraryURI)
     validateURI(this._rootURI);
     if (options['libraryPath'] || options['libraryPath'] == '') {
-      this._libraryPath = options.libraryPath.toString();
+      this._libraryPath = trailingSlash(options.libraryPath.toString());
     } else {
-      this._libraryPath = 'library';
+      this._libraryPath = 'library/';
     }
   }
 
@@ -117,15 +132,13 @@ function Server(options) {
 Server.prototype = new function () {
   function handle(request, response) {
     var url = require('url').parse(request.url, true);
-    var parts = pathutil.normalize(url.pathname).split('/').slice(1);
-    var path = '/' + parts.slice(1).join('/');
-    var source = parts[0];
+    var path = pathutil.normalize(url.pathname);
 
     var resourceURI = null;
-    if (source == this._rootPath) {
-      resourceURI = this._rootURI + path;
-    } else if (this._libraryURI && source == this._libraryPath) {
-      resourceURI = this._libraryURI + path;
+    if (path.indexOf(this._rootPath) == 0) {
+      resourceURI = this._rootURI + path.slice(this._rootPath.length);
+    } else if (this._libraryURI && path.indexOf(this._libraryPath) == 0) {
+      resourceURI = this._libraryURI + path.slice(this._libraryPath.length);
     } else {
       // Something has gone wrong.
     }
