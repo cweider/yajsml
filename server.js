@@ -120,17 +120,17 @@ Server.prototype = new function () {
   function handle(request, response) {
     var url = require('url').parse(request.url, true);
     var path = pathutil.normalize(url.pathname);
+    var modulePath;
 
     var resourceURI;
-    var isLibraryResource;
     if (path.indexOf(this._rootPath) == 0) {
       path = path.slice(this._rootPath.length);
+      modulePath = '/' + path;
       resourceURI = this._rootURI + path;
-      isLibraryResource = false;
     } else if (this._libraryURI && path.indexOf(this._libraryPath) == 0) {
       path = path.slice(this._libraryPath.length);
+      modulePath = path;
       resourceURI = this._libraryURI + path;
-      isLibraryResource = true;
     } else {
       // Something has gone wrong.
     }
@@ -187,13 +187,6 @@ Server.prototype = new function () {
         response.write("400: The parameter `callback` must be non-empty.")
         response.end();
         return;
-      }
-
-      var modulePath;
-      if (isLibraryResource) {
-        modulePath = path.replace(/^\//, '');
-      } else {
-        modulePath = path.charAt(0) == '/' ? path : '/' + path;
       }
 
       var respond = function (status, headers, content) {
