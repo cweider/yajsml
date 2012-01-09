@@ -33,6 +33,21 @@ var server = new (Yajsml.Server)({
 });
 
 Connect.createServer(
-  Ugly()
+  CORS({
+      origins: ['*']
+    , methods: ['HEAD', 'GET']
+    , headers: [
+        'Content-Type'
+      , 'Accept'
+      , 'Date'
+      , 'If-Modified-Since'
+      , 'Last-Modified'
+      , 'Expires'
+      , 'ETag'
+      , 'Cache-Control'
+      ]
+    })
+, Connect.cookieParser()
+, Ugly()
 , function (req, res, next) {return server.handle(req, res)}
 ).listen(3000);

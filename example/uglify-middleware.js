@@ -30,15 +30,15 @@ module.exports = function (options) {
     old_res.writeHead = res.writeHead;
     
     res.writeHead = function (status, headers) {
-console.error('HEAD');
-console.error(headers);
-      if (headers && headers['Content-Type'] == 'application/javascript') {
+      if (headers
+          && headers['Content-Type']
+          && headers['Content-Type'].indexOf('application/javascript;') == 0
+          && req.cookies && req.cookies['js-compress-override'] != 'disable'
+          ) {
         var buffer = '';
-
         old_res.write = res.write;
         old_res.end = res.end;
         res.write = function(data, encoding) {
-console.error('chunk')
           buffer += data.toString(encoding);
         };
         res.end = function(data, encoding) {
@@ -48,10 +48,10 @@ console.error('chunk')
 
           var content = undefined;
           try {
-            var ast = Uglify.jsp.parse(buffer);
-            ast = pro.ast_mangle(ast);
-            ast = pro.ast_squeeze(ast);
-            content = pro.gen_code(ast);
+            var ast = Uglify.parser.parse(buffer);
+            ast = Uglify.uglify.ast_mangle(ast);
+            ast = Uglify.uglify.ast_squeeze(ast);
+            content = Uglify.uglify.gen_code(ast);
           } catch (e) {
             // Silence error?
             content = buffer;
@@ -59,7 +59,6 @@ console.error('chunk')
 
           res.write = old_res.write;
           res.end = old_res.end;
-console.error(content);
           res.write(content, 'utf8');
           res.end();
         };
@@ -69,7 +68,7 @@ console.error(content);
       res.writeHead(status, headers);
     };
 
-    next();
+    next(undefined, req, res);
   };
   return uglifyHandler;
 };
