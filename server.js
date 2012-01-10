@@ -141,7 +141,7 @@ Server.prototype = new function () {
         }
       , selectProperties(
           request.headers
-        , ['if-modified-since', 'Cache-Control']
+        , ['if-modified-since', 'cache-control']
         )
       );
 
@@ -196,7 +196,7 @@ Server.prototype = new function () {
             , ['date', 'last-modified', 'cache-control', 'content-type']
             )
           , {
-              'tontent-type': 'application/javascript; charset=utf-8'
+              'content-type': 'application/javascript; charset=utf-8'
             }
           );
 
