@@ -33,7 +33,7 @@ module.exports = function (options) {
       if (headers
           && headers['content-type']
           && headers['content-type'].indexOf('application/javascript;') == 0
-          && req.cookies && req.cookies['js-compress-override'] != 'disable'
+          && req.cookies && req.cookies['js-compress-override'] != 'bypass'
           ) {
         var buffer = '';
         old_res.write = res.write;
