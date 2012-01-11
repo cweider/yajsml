@@ -75,14 +75,14 @@ function validateURI(uri) {
 */
 function Server(options) {
   function trailingSlash(path) {
-    if (path.charAt(path.length) != '/') {
+    if (path && path.charAt(path.length) != '/') {
       return path + '/';
     } else {
       return path;
     }
   }
   function leadingSlash(path) {
-    if (path.charAt(0) != '/') {
+    if (path && path.charAt(0) != '/') {
       return '/' + path;
     } else {
       return path;
@@ -90,23 +90,25 @@ function Server(options) {
   }
 
   if (options.rootURI) {
-    this._rootURI = trailingSlash(options.rootURI);
+    this._rootURI = options.rootURI.replace(/\/+$/, '');
     validateURI(this._rootURI);
     if (options['rootPath'] || options['rootPath'] == '') {
-      this._rootPath = trailingSlash(options.rootPath.toString());
+      this._rootPath = options.rootPath.toString();
     } else {
-      this._rootPath = 'root/';
+      this._rootPath = 'root';
     }
+    this._rootPath = leadingSlash(trailingSlash(this._rootPath));
   }
 
   if (options.libraryURI) {
-    this._libraryURI = trailingSlash(options.libraryURI)
+    this._libraryURI = options.libraryURI.replace(/\/+$/, '');
     validateURI(this._rootURI);
     if (options['libraryPath'] || options['libraryPath'] == '') {
-      this._libraryPath = trailingSlash(options.libraryPath.toString());
+      this._libraryPath = options.libraryPath.toString();
     } else {
-      this._libraryPath = 'library/';
+      this._libraryPath = 'library';
     }
+    this._libraryPath = leadingSlash(trailingSlash(this._libraryPath));
   }
 
   if (this._rootPath && this._libraryPath
