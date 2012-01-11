@@ -24,7 +24,9 @@
 
 var Connect = require('connect');
 var CORS = require('connect-cors');
-var Ugly = require('./uglify-middleware');
+
+var UglifyMiddleware = require('./uglify-middleware');
+var compressor = new UglifyMiddleware();
 
 var Yajsml = require('../server');
 var server = new (Yajsml.Server)({
@@ -50,6 +52,6 @@ Connect.createServer(
       ]
     })
 , Connect.cookieParser()
-, Ugly()
+, compressor
 , server
 ).listen(3000);

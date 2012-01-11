@@ -24,11 +24,13 @@
 
 var Uglify = require('uglify-js');
 
-module.exports = function (options) {
-  function uglifyHandler(req, res, next) {
+function UglifyMiddleware() {
+}
+UglifyMiddleware.prototype = new function () {
+  function handle(req, res, next) {
     var old_res = {};
     old_res.writeHead = res.writeHead;
-    
+
     res.writeHead = function (status, headers) {
       if (headers
           && headers['content-type']
@@ -70,5 +72,8 @@ module.exports = function (options) {
 
     next(undefined, req, res);
   };
-  return uglifyHandler;
-};
+
+  this.handle = handle;
+}();
+
+module.exports = UglifyMiddleware;
