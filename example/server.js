@@ -28,8 +28,10 @@ var Ugly = require('./uglify-middleware');
 
 var Yajsml = require('../server');
 var server = new (Yajsml.Server)({
-  rootURI: 'https://raw.github.com/cweider/require-kernel/master/'
-, rootPath: ''
+  rootURI: 'file://' + __dirname + '/static/javascripts/src'
+, rootPath: 'javascripts/src'
+, libraryURI: 'file://' + __dirname + '/static/javascripts/lib'
+, libraryPath: 'javascripts/lib'
 });
 
 Connect.createServer(
