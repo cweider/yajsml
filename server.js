@@ -90,7 +90,7 @@ function Server(options) {
   }
 
   if (options.rootURI) {
-    this._rootURI = options.rootURI.replace(/\/+$/, '');
+    this._rootURI = trailingSlash(options.rootURI);
     validateURI(this._rootURI);
     if (options['rootPath'] || options['rootPath'] == '') {
       this._rootPath = options.rootPath.toString();
@@ -101,7 +101,7 @@ function Server(options) {
   }
 
   if (options.libraryURI) {
-    this._libraryURI = options.libraryURI.replace(/\/+$/, '');
+    this._libraryURI = trailingSlash(options.libraryURI);
     validateURI(this._rootURI);
     if (options['libraryPath'] || options['libraryPath'] == '') {
       this._libraryPath = options.libraryPath.toString();
