@@ -83,10 +83,14 @@ var fs_client = (new function () {
             callback(response);
             response.emit('end');
           } else if (response.statusCode != 200) {
-            response.headers['content-type'] = 'text/plain; charset=utf-8';
+            if (STATUS_MESSAGES[response.statusCode]) {
+              response.headers['content-type'] = 'text/plain; charset=utf-8';
+            }
 
             callback(response);
-            response.emit('data', STATUS_MESSAGES[response.statusCode])
+            if (STATUS_MESSAGES[response.statusCode]) {
+              response.emit('data', STATUS_MESSAGES[response.statusCode]);
+            }
             response.emit('end');
           } else {
             fs.readFile(path, function (error, text) {
