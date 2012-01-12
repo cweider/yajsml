@@ -24,6 +24,13 @@ var fs = require('fs');
 var urlutil = require('url');
 var pathutil = require('path');
 
+var mime = undefined;
+try {
+  mime = require('mime');
+} catch (e) {
+  // skip.
+}
+
 var fs_client = (new function () {
   var STATUS_MESSAGES = {
     403: '403: Access denied.'
@@ -145,8 +152,15 @@ var fs_client = (new function () {
               response.emit('end');
             } else {
               response.statusCode = 200;
+              var type, charset;
+              if (mime) {
+                type = mime.lookup(path);
+                charset = mime.charsets.lookup(type);
+              } else {
+                type = 'application/octet-stream';
+              }
               response.headers['content-type'] =
-                  'application/javascript; charset=utf-8';
+                  type + (charset ? '; charset=' + charset : '');
 
               callback(response);
               response.emit('data', text);
