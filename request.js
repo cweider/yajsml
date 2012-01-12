@@ -65,6 +65,7 @@ var fs_client = (new function () {
                 response.statusCode = 404;
                 fs.stat(pathutil.dirname(path), function (error, stats) {
                   if (!error) {
+                    var date = new Date();
                     var modifiedLast = new Date(stats.mtime);
                     response.headers['date'] = date.toUTCString();
                     response.headers['last-modified'] =
