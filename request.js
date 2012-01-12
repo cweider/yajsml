@@ -56,12 +56,24 @@ var fs_client = (new function () {
             if (error) {
               if (error.code == 'ENOENT') {
                 response.statusCode = 404;
+                fs.stat(pathutil.dirname(path), function (error, stats) {
+                  if (!error) {
+                    var modifiedLast = new Date(stats.mtime);
+                    response.headers['date'] = date.toUTCString();
+                    response.headers['last-modified'] =
+                        modifiedLast.toUTCString();
+                  } else {
+                    response.statusCode = 502;
+                  }
+                  after_head();
+                });
               } else if (error.code == 'EACCESS') {
                 response.statusCode = 403;
+                after_head();
               } else {
                 response.statusCode = 502;
+                after_head();
               }
-              after_head();
             } else if (stats.isFile()) {
               var date = new Date()
               var modifiedLast = new Date(stats.mtime);
