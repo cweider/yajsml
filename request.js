@@ -98,6 +98,7 @@ var fs_client = (new function () {
               }
               after_head();
             } else if (stats.isSymbolicLink()) {
+              var date = new Date()
               var modifiedLast = new Date(stats.mtime);
               response.headers['date'] = date.toUTCString();
               response.headers['last-modified'] = modifiedLast.toUTCString();
