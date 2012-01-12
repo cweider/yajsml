@@ -51,34 +51,40 @@ var fs_client = (new function () {
         response.emit('data', STATUS_MESSAGES[response.statusCode])
         response.emit('end');
       } else {
-        fs.stat(path, function (error, stats) {
-          if (error) {
-            if (error.code == 'ENOENT') {
+        function head() {
+          fs.stat(path, function (error, stats) {
+            if (error) {
+              if (error.code == 'ENOENT') {
+                response.statusCode = 404;
+              } else if (error.code == 'EACCESS') {
+                response.statusCode = 403;
+              } else {
+                response.statusCode = 502;
+              }
+              after_head();
+            } else if (stats.isFile()) {
+              var date = new Date()
+              var modifiedLast = new Date(stats.mtime);
+              var modifiedSince = (options.headers || {})['if-modified-since'];
+              modifiedSince = modifiedSince && new Date(modifiedSince);
+
+              response.headers['date'] = date.toUTCString();
+              response.headers['last-modified'] = modifiedLast.toUTCString();
+
+              if (modifiedSince && modifiedLast
+                  && modifiedSince >= modifiedLast) {
+                response.statusCode = 304;
+              } else {
+                response.statusCode = 200;
+              }
+              after_head();
+            } else {
               response.statusCode = 404;
-            } else if (error.code == 'EACCESS') {
-              response.statusCode = 403;
-            } else {
-              response.statusCode = 502;
+              after_head();
             }
-          } else if (stats.isFile()) {
-            var date = new Date()
-            var modifiedLast = new Date(stats.mtime);
-            var modifiedSince = (options.headers || {})['if-modified-since'];
-            modifiedSince = modifiedSince && new Date(modifiedSince);
-
-            response.headers['date'] = date.toUTCString();
-            response.headers['last-modified'] = modifiedLast.toUTCString();
-
-            if (modifiedSince && modifiedLast
-                && modifiedSince >= modifiedLast) {
-              response.statusCode = 304;
-            } else {
-              response.statusCode = 200;
-            }
-          } else {
-            response.statusCode = 404;
-          }
-
+          });
+        }
+        function after_head() {
           if (method == 'HEAD') {
             callback(response);
             response.emit('end');
@@ -93,33 +99,38 @@ var fs_client = (new function () {
             }
             response.emit('end');
           } else {
-            fs.readFile(path, function (error, text) {
-              if (error) {
-                if (error.code == 'ENOENT') {
-                  response.statusCode = 404;
-                } else if (error.code == 'EACCESS') {
-                  response.statusCode = 403;
-                } else {
-                  response.statusCode = 502;
-                }
-                response.headers['content-type'] = 'text/plain; charset=utf-8';
-
-                callback(response);
-                response.emit('data', STATUS_MESSAGES[response.statusCode])
-                response.emit('end');
-              } else {
-                response.statusCode = 200;
-                response.headers['content-type'] =
-                    'application/javascript; charset=utf-8';
-
-                callback(response);
-                response.emit('data', text);
-                response.emit('end');
-              }
-            });
+            get();
           }
-        });
+        }
+        function get() {
+          fs.readFile(path, function (error, text) {
+            if (error) {
+              if (error.code == 'ENOENT') {
+                response.statusCode = 404;
+              } else if (error.code == 'EACCESS') {
+                response.statusCode = 403;
+              } else {
+                response.statusCode = 502;
+              }
+              response.headers['content-type'] = 'text/plain; charset=utf-8';
+
+              callback(response);
+              response.emit('data', STATUS_MESSAGES[response.statusCode])
+              response.emit('end');
+            } else {
+              response.statusCode = 200;
+              response.headers['content-type'] =
+                  'application/javascript; charset=utf-8';
+
+              callback(response);
+              response.emit('data', text);
+              response.emit('end');
+            }
+          });
+        }
       }
+
+      head();
     };
     return request;
   }
