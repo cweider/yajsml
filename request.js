@@ -83,7 +83,7 @@ var fs_client = (new function () {
                 after_head();
               }
             } else if (stats.isFile()) {
-              var date = new Date()
+              var date = new Date();
               var modifiedLast = new Date(stats.mtime);
               var modifiedSince = (options.headers || {})['if-modified-since'];
               modifiedSince = modifiedSince && new Date(modifiedSince);
