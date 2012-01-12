@@ -22,22 +22,52 @@
 
 */
 
-var Connect = require('connect');
-var CORS = require('connect-cors');
+var connect = require('connect');
+var cors = require('connect-cors');
 
 var UglifyMiddleware = require('./uglify-middleware');
 var compressor = new UglifyMiddleware();
+compressor._console = console;
 
 var Yajsml = require('../server');
-var server = new (Yajsml.Server)({
-  rootURI: 'file://' + __dirname + '/static/javascripts/src'
-, rootPath: 'javascripts/src'
-, libraryURI: 'file://' + __dirname + '/static/javascripts/lib'
-, libraryPath: 'javascripts/lib'
+
+var yajsml_local = new (Yajsml.Server)({
+  rootURI: 'file://' + __dirname + '/public/javascripts/src'
+, rootPath: 'src'
+, libraryURI: 'file://' + __dirname + '/public/javascripts/lib'
+, libraryPath: 'lib'
 });
 
-Connect.createServer(
-  CORS({
+var instances_controller = new (require('./instances_controller'))
+
+var admin_web = connect.createServer()
+    .use(connect.cookieParser())
+    .use(connect.limit('500kb'))
+    .use(compressor)
+    .use(connect.favicon(__dirname + '/public/images/favicon.ico'))
+    .use(connect.router(function(app) {
+      app.get('/instances', function(req, res, next) {
+        instances_controller.index(req, res);
+      });
+      app.post('/instances', function(req, res, next) {
+        instances_controller.create(req, res);
+      });
+      app.get('/instances/:id', function(req, res, next) {
+        instances_controller.show(req, res);
+      });
+      app.put('/instances/:id', function(req, res, next) {
+        instances_controller.update(req, res);
+      });
+      app.delete('/instances/:id', function(req, res, next) {
+        instances_controller.destroy(req, res);
+      });
+    }))
+    .use('/javascripts', yajsml_local)
+    .use(connect.static(__dirname + '/public'))
+    .listen(8450);
+
+var admin_assets = connect.createServer()
+  .use(cors({
       origins: ['*']
     , methods: ['HEAD', 'GET']
     , headers: [
@@ -50,8 +80,8 @@ Connect.createServer(
       , 'etag'
       , 'cache-control'
       ]
-    })
-, Connect.cookieParser()
-, compressor
-, server
-).listen(3000);
+    }))
+  .use(connect.cookieParser())
+  .use(compressor)
+  .use('/javascripts', yajsml_local)
+  .listen(8451);
