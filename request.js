@@ -36,7 +36,7 @@ var fs_client = (new function () {
     403: '403: Access denied.'
   , 404: '404: File not found.'
   , 405: '405: Only the HEAD or GET methods are allowed.'
-  , 500: '500: Error reading file.'
+  , 502: '502: Error reading file.'
   };
 
   function request(options, callback) {
