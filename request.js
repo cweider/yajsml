@@ -138,41 +138,24 @@ var fs_client = (new function () {
           }
         }
         function get() {
-          fs.readFile(path, function (error, text) {
-            if (error) {
-              if (error.code == 'ENOENT') {
-                response.statusCode = 404;
-              } else if (error.code == 'EACCESS') {
-                response.statusCode = 403;
-              } else {
-                response.statusCode = 502;
-              }
-              if (STATUS_MESSAGES[response.statusCode]) {
-                response.headers['content-type'] = 'text/plain; charset=utf-8';
-              }
+          response.statusCode = 200;
+          var type, charset;
+          if (mime) {
+            type = mime.lookup(path);
+            charset = mime.charsets.lookup(type);
+          } else {
+            type = 'application/octet-stream';
+          }
+          response.headers['content-type'] =
+              type + (charset ? '; charset=' + charset : '');
 
-              callback(response);
-              if (STATUS_MESSAGES[response.statusCode]) {
-                response.emit('data', STATUS_MESSAGES[response.statusCode]);
-              }
-              response.emit('end');
-            } else {
-              response.statusCode = 200;
-              var type, charset;
-              if (mime) {
-                type = mime.lookup(path);
-                charset = mime.charsets.lookup(type);
-              } else {
-                type = 'application/octet-stream';
-              }
-              response.headers['content-type'] =
-                  type + (charset ? '; charset=' + charset : '');
+          var stream = fs.createReadStream(path);
+          stream.statusCode = response.statusCode;
+          stream.headers = response.headers;
+          response = stream;
 
-              callback(response);
-              response.emit('data', text);
-              response.emit('end');
-            }
-          });
+          callback(response);
+          stream.resume();
         }
       }
 
