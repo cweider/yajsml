@@ -31,6 +31,8 @@ UglifyMiddleware.prototype = new function () {
     var old_res = {};
     old_res.writeHead = res.writeHead;
 
+    var console = this._console;
+
     res.writeHead = function (status, headers) {
       if (headers
           && headers['content-type']
@@ -56,6 +58,7 @@ UglifyMiddleware.prototype = new function () {
             content = Uglify.uglify.gen_code(ast);
           } catch (e) {
             // Silence error?
+            console && console.error(e);
             content = buffer;
           }
 
