@@ -145,10 +145,14 @@ var fs_client = (new function () {
               } else {
                 response.statusCode = 502;
               }
-              response.headers['content-type'] = 'text/plain; charset=utf-8';
+              if (STATUS_MESSAGES[response.statusCode]) {
+                response.headers['content-type'] = 'text/plain; charset=utf-8';
+              }
 
               callback(response);
-              response.emit('data', STATUS_MESSAGES[response.statusCode])
+              if (STATUS_MESSAGES[response.statusCode]) {
+                response.emit('data', STATUS_MESSAGES[response.statusCode]);
+              }
               response.emit('end');
             } else {
               response.statusCode = 200;
