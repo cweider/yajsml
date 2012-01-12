@@ -52,7 +52,7 @@ var fs_client = (new function () {
         response.emit('end');
       } else {
         function head() {
-          fs.stat(path, function (error, stats) {
+          fs.lstat(path, function (error, stats) {
             if (error) {
               if (error.code == 'ENOENT') {
                 response.statusCode = 404;
@@ -90,6 +90,20 @@ var fs_client = (new function () {
                 response.statusCode = 200;
               }
               after_head();
+            } else if (stats.isSymbolicLink()) {
+              var modifiedLast = new Date(stats.mtime);
+              response.headers['date'] = date.toUTCString();
+              response.headers['last-modified'] = modifiedLast.toUTCString();
+
+              fs.readLink(path, function (error, linkString) {
+                if (!error) {
+                  response.statusCode = 307;
+                  response.headers['location'] = linkString;
+                } else {
+                  response.statusCode = 502;
+                }
+                after_head();
+              });
             } else {
               response.statusCode = 404;
               after_head();
