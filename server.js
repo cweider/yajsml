@@ -119,23 +119,27 @@ function Server(options) {
   }
 }
 Server.prototype = new function () {
+  function _resourceURIForModulePath(modulePath) {
+    if (path.charAt(0) == '/') {
+      return this._rootURI + path;
+    } else {
+      return this._libraryURI + path;
+    }
+  }
   function handle(request, response) {
     var url = require('url').parse(request.url, true);
     var path = pathutil.normalize(url.pathname);
-    var modulePath;
 
-    var resourceURI;
+    var modulePath;
     if (path.indexOf(this._rootPath) == 0) {
-      path = path.slice(this._rootPath.length);
-      modulePath = '/' + path;
-      resourceURI = this._rootURI + path;
+      modulePath = '/' + path.slice(this._rootPath.length);
     } else if (this._libraryURI && path.indexOf(this._libraryPath) == 0) {
-      path = path.slice(this._libraryPath.length);
-      modulePath = path;
-      resourceURI = this._libraryURI + path;
+      modulePath = path.slice(this._libraryPath.length);
     } else {
       // Something has gone wrong.
     }
+
+    var resourceURI = _resourceURIForModulePath(modulePath);
 
     var requestHeaders = mixin({
           'user-agent': 'yajsml'
