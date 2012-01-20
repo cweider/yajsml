@@ -104,7 +104,7 @@ var fs_client = (new function () {
               response.headers['date'] = date.toUTCString();
               response.headers['last-modified'] = modifiedLast.toUTCString();
 
-              fs.readLink(path, function (error, linkString) {
+              fs.readlink(path, function (error, linkString) {
                 if (!error) {
                   response.statusCode = 307;
                   response.headers['location'] = linkString;
