@@ -195,7 +195,7 @@ Server.prototype = new function () {
     this._associator = associator;
   }
 
-  function handle(request, response) {
+  function handle(request, response, next) {
     var url = require('url').parse(request.url, true);
     var path = pathutil.normalize(url.pathname);
 
@@ -227,11 +227,15 @@ Server.prototype = new function () {
       response.write("405: Only the HEAD or GET methods are allowed.")
       response.end();
     } else if (!modulePath) {
-      response.writeHead(400, {
-        'content-type': 'text/plain; charset=utf-8'
-      });
-      response.write("400: The requested resource could not be found.")
-      response.end();
+      if (next) {
+        next();
+      } else {
+        response.writeHead(404, {
+          'content-type': 'text/plain; charset=utf-8'
+        });
+        response.write("404: The requested resource could not be found.");
+        response.end();
+      }
     } else if (!('callback' in url.query)) {
       // I respond with a straight-forward proxy.
       var resourceURI = this._resourceURIForModulePath(modulePath);

@@ -34,9 +34,9 @@ var SimpleAssociator = require('../associator').SimpleAssociator;
 
 var yajsml_local = new (Yajsml.Server)({
   rootURI: 'file://' + __dirname + '/public/javascripts/src'
-, rootPath: 'src'
+, rootPath: 'javascripts/src'
 , libraryURI: 'file://' + __dirname + '/public/javascripts/lib'
-, libraryPath: 'lib'
+, libraryPath: 'javascripts/lib'
 });
 yajsml_local.setAssociator(new SimpleAssociator());
 
@@ -64,7 +64,7 @@ var admin_web = connect.createServer()
         instances_controller.destroy(req, res);
       });
     }))
-    .use('/javascripts', yajsml_local)
+    .use(yajsml_local)
     .use(connect.static(__dirname + '/public'))
     .listen(8450);
 
@@ -85,5 +85,5 @@ var admin_assets = connect.createServer()
     }))
   .use(connect.cookieParser())
   .use(compressor)
-  .use('/javascripts', yajsml_local)
+  .use(yajsml_local)
   .listen(8451);
