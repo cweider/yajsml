@@ -266,16 +266,18 @@ Server.prototype = new function () {
             }
           );
 
-        if (status == 304) {
-          response.writeHead(status, responseHeaders);
+        var modifiedSince = new Date(headers['if-modified-since']);
+        var lastModified = new Date(requestHeaders['last-modified']);
+        if (lastModified <= modifiedSince) {
+          response.writeHead(304, responseHeaders);
           response.end();
         } else {
           response.writeHead(200, responseHeaders);
           if (request.method == 'GET') {
             content && response.write(content);
           }
-          response.end();
         }
+        response.end();
       };
 
       var modulePaths = [modulePath];
