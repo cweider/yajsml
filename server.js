@@ -24,6 +24,7 @@ var fs = require('fs');
 var urlutil = require('url');
 var pathutil = require('path');
 var requestURI = require('./request').requestURI;
+var requestURIs = require('./request').requestURIs;
 
 function hasOwnProperty(o, k) {
   return Object.prototype.hasOwnProperty.call(o, k);
@@ -235,15 +236,20 @@ Server.prototype = new function () {
         }
       };
 
-      requestURI(resourceURI, 'HEAD', requestHeaders,
-        function (status, headers, content) {
+      requestURIs([resourceURI], 'HEAD', requestHeaders,
+        function (statuss, headerss, contents) {
+          var status = statuss[0];
+          var headers = headerss[0];
           if (status == 304) { // Skip the content, since it didn't change.
             respond(status, headers);
-          } else if (request.method == 'HEAD' && status != 405) {
+          } else if (request.method == 'HEAD' && status != 405 && status !== undefined) {
             respond(status, headers);
           } else {
-            requestURI(resourceURI, 'GET', requestHeaders,
-              function (status, headers, content) {
+            requestURIs([resourceURI], 'GET', requestHeaders,
+              function (statuss, headerss, contents) {
+                var status = statuss[0];
+                var headers = headerss[0];
+                var content = contents[0];
                 if (request.method == 'HEAD') {
                   respond(status, headers);
                 } else if (request.method == 'GET') {
