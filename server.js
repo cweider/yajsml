@@ -313,9 +313,9 @@ Server.prototype = new function () {
           } else {
             // HEAD was not helpful, so issue a GET and remove headers that
             // would yield a 304, we need full content for each resource.
-            requestHeaders = selectProperties(requestHeaders
+            requestHeadersForGet = selectProperties(requestHeaders
                 , ['user-agent', 'accept', 'cache-control']);
-            requestURIs(resourceURIs, 'GET', requestHeaders,
+            requestURIs(resourceURIs, 'GET', requestHeadersForGet,
               function (statuss, headerss, contents) {
                 var status = statuss.reduce(function (m, s) {
                   return m && m == s ? m : undefined;
