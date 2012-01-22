@@ -20,6 +20,7 @@
 
 */
 
+var crypto = require('crypto');
 var fs = require('fs');
 var urlutil = require('url');
 var pathutil = require('path');
@@ -69,6 +70,42 @@ function validateURI(uri) {
       && parsed.protocol != 'https:') {
     throw "Invalid URI: " + JSON.stringify(uri) + ".";
   }
+}
+
+// Request HEAD for the given resources and return the composition of all
+// responses. Each response is merged in a way preserves the repeatability and
+// meaning of the aggregate. If any response can not be merged cleanly the
+// result will be `undefined`.
+function mergeHeaders(h_1, h_2, h_n) {
+  var headersList = Array.prototype.slice.call(arguments, 0);
+  var headers = {};
+
+  var values, value;
+  values = headersList.map(function (h) {
+    return Date.parse(h['date']);
+  });
+  if (values.every(function (value) {return !isNaN(value)})) {
+    value = Math.max.apply(this, values);
+    headers['date'] = (new Date(value)).toUTCString();
+  }
+
+  values = headersList.map(function (h) {
+    return Date.parse(h['last-modified']);
+  });
+  if (values.every(function (value) {return !isNaN(value)})) {
+    value = Math.max.apply(this, values);
+    headers['last-modified'] = (new Date(value)).toUTCString();
+  }
+
+  values = headersList.map(function (h) {
+    return parseInt(h['expires'], 10);
+  });
+  if (values.every(function (value) {return !isNaN(value)})) {
+    value = Math.min.apply(this, values);
+    headers['expires'] = value.toString(10);
+  }
+
+  return headers;
 }
 
 function packagedDefine(JSONPCallback, moduleMap) {
@@ -163,8 +200,6 @@ Server.prototype = new function () {
       // Something has gone wrong.
     }
 
-    var resourceURI = this._resourceURIForModulePath(modulePath);
-
     var requestHeaders = mixin({
           'user-agent': 'yajsml'
         , 'accept': '*/*'
@@ -191,6 +226,7 @@ Server.prototype = new function () {
       response.end();
     } else if (!('callback' in url.query)) {
       // I respond with a straight-forward proxy.
+      var resourceURI = this._resourceURIForModulePath(modulePath);
       requestURI(resourceURI, 'GET', requestHeaders,
         function (status, headers, content) {
           var responseHeaders = selectProperties(
@@ -234,13 +270,6 @@ Server.prototype = new function () {
           response.writeHead(status, responseHeaders);
           response.end();
         } else {
-          if (request.method == 'GET') {
-            var modules = {};
-            modules[modulePath] = status == 200 ? content : null;
-            content = packagedDefine(JSONPCallback, modules);
-          }
-
-
           response.writeHead(200, responseHeaders);
           if (request.method == 'GET') {
             content && response.write(content);
@@ -249,10 +278,18 @@ Server.prototype = new function () {
         }
       };
 
-      requestURIs([resourceURI], 'HEAD', requestHeaders,
+      var modulePaths = [modulePath];
+      var self = this;
+      var resourceURIs = modulePaths.map(function (modulePath) {
+        return self._resourceURIForModulePath(modulePath);
+      });
+
+      requestURIs(resourceURIs, 'HEAD', requestHeaders,
         function (statuss, headerss, contents) {
-          var status = statuss[0];
-          var headers = headerss[0];
+          var status = statuss.reduce(function (m, s) {
+            return m && m == s ? m : undefined;
+          });
+          var headers = mergeHeaders.apply(this, headerss);
           if (status == 304) {
             // Skip the content, since it didn't change.
             respond(status, headers);
@@ -261,14 +298,23 @@ Server.prototype = new function () {
             // my response will not be a 304 and will be 200.
             respond(status, headers);
           } else {
-            requestURIs([resourceURI], 'GET', requestHeaders,
+            // HEAD was not helpful, so issue a GET and remove headers that
+            // would yield a 304, we need full content for each resource.
+            requestHeaders = selectProperties(requestHeaders
+                , ['user-agent', 'accept', 'cache-control']);
+            requestURIs(resourceURIs, 'GET', requestHeaders,
               function (statuss, headerss, contents) {
-                var status = statuss[0];
-                var headers = headerss[0];
-                if (status == 304) {
-                  // Skip the content, since it didn't change.
-                  respond(status, headers);
-                } else if (request.method == 'HEAD') {
+                var status = statuss.reduce(function (m, s) {
+                  return m && m == s ? m : undefined;
+                });
+                var headers = mergeHeaders.apply(this, headerss);
+                var moduleMap = {};
+                for (var i = 0, ii = contents.length; i < ii; i++) {
+                  moduleMap[modulePaths[i]] =
+                      statuss[i] == 200 ? contents[i] : null;
+                }
+                var content = packagedDefine(JSONPCallback, moduleMap);
+                if (request.method == 'HEAD') {
                   // I'll respond with no content
                   respond(status, headers);
                 } else if (request.method == 'GET') {
