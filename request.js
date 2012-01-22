@@ -63,18 +63,29 @@ var fs_client = (new function () {
             if (error) {
               if (error.code == 'ENOENT') {
                 response.statusCode = 404;
-                fs.stat(pathutil.dirname(path), function (error, stats) {
-                  if (!error) {
-                    var date = new Date();
-                    var modifiedLast = new Date(stats.mtime);
-                    response.headers['date'] = date.toUTCString();
-                    response.headers['last-modified'] =
-                        modifiedLast.toUTCString();
-                  } else {
-                    response.statusCode = 502;
-                  }
-                  after_head();
-                });
+                var parentTries = 2;
+                var statParent = function (path) {
+                  var parentPath = pathutil.dirname(path);
+                  fs.stat(parentPath, function (error, stats) {
+                    if (!error) {
+                      var date = new Date();
+                      var modifiedLast = new Date(stats.mtime);
+                      response.headers['date'] = date.toUTCString();
+                      response.headers['last-modified'] =
+                          modifiedLast.toUTCString();
+                      after_head();
+                    } else if (parentTries > 0 || parentPath == '/') {
+                      parentTries--;
+                      statParent(parentPath);
+                    } else if (error.code == 'ENOENT') {
+                      response.statusCode = 404;
+                    } else {
+                      response.statusCode = 502;
+                      after_head();
+                    }
+                  });
+                };
+                statParent(path);
               } else if (error.code == 'EACCESS') {
                 response.statusCode = 403;
                 after_head();
