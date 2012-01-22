@@ -188,16 +188,20 @@ function requestURI(url, method, headers, callback) {
   , headers: headers
   }, function (response) {
     var buffer = undefined;
+    var ended = false;
+    var closed = false;
     response.setEncoding('utf8');
     response.on('data', function (chunk) {
       buffer = buffer || '';
       buffer += chunk;
     });
     response.on('close', function () {
-      callback(502, {});
+      closed = true
+      !ended && callback(502, {});
     });
     response.on('end', function () {
-      callback(response.statusCode, response.headers, buffer);
+      ended = true;
+      !closed && callback(response.statusCode, response.headers, buffer);
     });
   });
   request.on('error', function () {
