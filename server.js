@@ -268,8 +268,8 @@ Server.prototype = new function () {
         if (status == 304) {
           response.writeHead(status, responseHeaders);
         } else {
-          var modifiedSince = new Date(headers['if-modified-since']);
-          var lastModified = new Date(requestHeaders['last-modified']);
+          var lastModified = new Date(headers['last-modified']);
+          var modifiedSince = new Date(requestHeaders['if-modified-since']);
           if (lastModified && lastModified <= modifiedSince) {
             response.writeHead(304, responseHeaders);
           } else if (requestHeaders['etag']
