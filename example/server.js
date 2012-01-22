@@ -30,6 +30,7 @@ var compressor = new UglifyMiddleware();
 compressor._console = console;
 
 var Yajsml = require('../server');
+var SimpleAssociator = require('../associator').SimpleAssociator;
 
 var yajsml_local = new (Yajsml.Server)({
   rootURI: 'file://' + __dirname + '/public/javascripts/src'
@@ -37,6 +38,7 @@ var yajsml_local = new (Yajsml.Server)({
 , libraryURI: 'file://' + __dirname + '/public/javascripts/lib'
 , libraryPath: 'lib'
 });
+yajsml_local.setAssociator(new SimpleAssociator());
 
 var instances_controller = new (require('./instances_controller'))
 

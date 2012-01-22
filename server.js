@@ -190,6 +190,11 @@ Server.prototype = new function () {
       return this._libraryURI + path;
     }
   }
+
+  function setAssociator(associator) {
+    this._associator = associator;
+  }
+
   function handle(request, response) {
     var url = require('url').parse(request.url, true);
     var path = pathutil.normalize(url.pathname);
@@ -280,7 +285,13 @@ Server.prototype = new function () {
         response.end();
       };
 
-      var modulePaths = [modulePath];
+      var modulePaths
+      if (this._associator) {
+        modulePaths = this._associator.associatedModulePaths(modulePath);
+      } else {
+        modulePaths = [modulePath];
+      }
+
       var self = this;
       var resourceURIs = modulePaths.map(function (modulePath) {
         return self._resourceURIForModulePath(modulePath);
@@ -331,6 +342,7 @@ Server.prototype = new function () {
   }
 
   this._resourceURIForModulePath = _resourceURIForModulePath;
+  this.setAssociator = setAssociator;
   this.handle = handle;
 }();
 
