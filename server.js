@@ -288,7 +288,26 @@ Server.prototype = new function () {
       var modulePaths = [modulePath];
       var preferredPath = modulePath;
       if (this._associator) {
+        if (this._associator.preferredPath) {
+          preferredPath = this._associator.preferredPath(preferredPath);
+        }
         modulePaths = this._associator.associatedModulePaths(modulePath);
+      }
+
+      if (preferredPath != modulePath) {
+        if (preferredPath.charAt(0) == '/') {
+          url.pathname = this._rootPath + preferredPath.slice(1);
+        } else {
+          url.pathname = this._libraryPath + preferredPath;
+        }
+        response.writeHead(301, {
+          'Content-Type': 'text/plain; charset=utf-8'
+        , 'Location': urlutil.format(url)
+        });
+        response.write("301: Resource moved permanantly to "
+          + require('url').format(url));
+        response.end();
+        return;
       }
 
       var self = this;
