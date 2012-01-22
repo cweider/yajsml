@@ -167,7 +167,7 @@ var fs_client = (new function () {
 }());
 
 /* Retrieve file, http, or https resources. */
-function requestURL(url, method, headers, callback) {
+function requestURI(url, method, headers, callback) {
   var parsedURL = urlutil.parse(url);
   var client = undefined;
   if (parsedURL.protocol == 'file:') {
@@ -213,14 +213,14 @@ function requestURIs(locations, method, headers, callback) {
   function respondFor(i) {
     return function (status, headers, content) {
       responses[i] = [status, headers, content];
-      if (--i == 0) {
+      if (--pendingRequests == 0) {
         completed();
       }
-    }
+    };
   }
 
   for (var i = 0, ii = locations.length; i < ii; i++) {
-    requestURI(locations[i], method, requestHeaders, respondFor(i));
+    requestURI(locations[i], method, headers, respondFor(i));
   }
 
   function completed() {

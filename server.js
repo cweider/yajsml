@@ -23,7 +23,7 @@
 var fs = require('fs');
 var urlutil = require('url');
 var pathutil = require('path');
-var requestURL = require('./request').requestURL;
+var requestURI = require('./request').requestURI;
 
 function hasOwnProperty(o, k) {
   return Object.prototype.hasOwnProperty.call(o, k);
@@ -167,7 +167,7 @@ Server.prototype = new function () {
       response.end();
     } else if (!('callback' in url.query)) {
       // I respond with a straight-forward proxy.
-      requestURL(resourceURI, 'GET', requestHeaders,
+      requestURI(resourceURI, 'GET', requestHeaders,
         function (status, headers, content) {
           var responseHeaders = selectProperties(
               headers
@@ -235,14 +235,14 @@ Server.prototype = new function () {
         }
       };
 
-      requestURL(resourceURI, 'HEAD', requestHeaders,
+      requestURI(resourceURI, 'HEAD', requestHeaders,
         function (status, headers, content) {
           if (status == 304) { // Skip the content, since it didn't change.
             respond(status, headers);
           } else if (request.method == 'HEAD' && status != 405) {
             respond(status, headers);
           } else {
-            requestURL(resourceURI, 'GET', requestHeaders,
+            requestURI(resourceURI, 'GET', requestHeaders,
               function (status, headers, content) {
                 if (request.method == 'HEAD') {
                   respond(status, headers);
