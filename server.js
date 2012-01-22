@@ -260,15 +260,21 @@ Server.prototype = new function () {
         responseHeaders['content-type'] =
             'application/javascript; charset=utf-8';
 
-        var modifiedSince = new Date(headers['if-modified-since']);
-        var lastModified = new Date(requestHeaders['last-modified']);
-        if (lastModified <= modifiedSince) {
-          response.writeHead(304, responseHeaders);
-          response.end();
+        if (status == 304) {
+          response.writeHead(status, responseHeaders);
         } else {
-          response.writeHead(200, responseHeaders);
-          if (request.method == 'GET') {
-            content && response.write(content);
+          var modifiedSince = new Date(headers['if-modified-since']);
+          var lastModified = new Date(requestHeaders['last-modified']);
+          if (lastModified && lastModified <= modifiedSince) {
+            response.writeHead(304, responseHeaders);
+          } else if (requestHeaders['etag']
+              && requestHeaders['etag'] == headers['etag']) {
+            response.writeHead(304, responseHeaders);
+          } else {
+            response.writeHead(200, responseHeaders);
+            if (request.method == 'GET') {
+              content && response.write(content);
+            }
           }
         }
         response.end();
