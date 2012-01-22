@@ -201,7 +201,7 @@ Server.prototype = new function () {
 
     var modulePath;
     if (path.indexOf(this._rootPath) == 0) {
-      modulePath = '/' + path.slice(this._rootPath.length);
+      modulePath = path.slice(this._rootPath.length);
     } else if (this._libraryURI && path.indexOf(this._libraryPath) == 0) {
       modulePath = path.slice(this._libraryPath.length);
     } else {
