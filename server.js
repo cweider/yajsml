@@ -27,6 +27,9 @@ var pathutil = require('path');
 var requestURI = require('./request').requestURI;
 var requestURIs = require('./request').requestURIs;
 
+var HEADER_WHITELIST =
+    ['date', 'last-modified', 'cache-control', 'content-type'];
+
 function hasOwnProperty(o, k) {
   return Object.prototype.hasOwnProperty.call(o, k);
 }
@@ -229,10 +232,7 @@ Server.prototype = new function () {
       var resourceURI = this._resourceURIForModulePath(modulePath);
       requestURI(resourceURI, 'GET', requestHeaders,
         function (status, headers, content) {
-          var responseHeaders = selectProperties(
-              headers
-            , ['date', 'last-modified', 'cache-control', 'content-type']
-            );
+          var responseHeaders = selectProperties(headers, HEADER_WHITELIST);
           if (status == 200 && ('content-type' in responseHeaders)) {
             responseHeaders['content-type'] =
                 'application/javascript; charset=utf-8'
@@ -256,15 +256,9 @@ Server.prototype = new function () {
       }
 
       var respond = function (status, headers, content) {
-        var responseHeaders = mixin(
-            selectProperties(
-              headers
-            , ['date', 'last-modified', 'cache-control', 'content-type']
-            )
-          , {
-              'content-type': 'application/javascript; charset=utf-8'
-            }
-          );
+        var responseHeaders = selectProperties(headers, HEADER_WHITELIST);
+        responseHeaders['content-type'] =
+            'application/javascript; charset=utf-8';
 
         var modifiedSince = new Date(headers['if-modified-since']);
         var lastModified = new Date(requestHeaders['last-modified']);
