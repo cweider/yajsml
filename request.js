@@ -206,5 +206,31 @@ function requestURL(url, method, headers, callback) {
   request.end();
 }
 
-exports.requestURL = requestURL;
+function requestURIs(locations, method, headers, callback) {
+  var pendingRequests = locations.length;
+  var responses = [];
+
+  function respondFor(i) {
+    return function (status, headers, content) {
+      responses[i] = [status, headers, content];
+      if (--i == 0) {
+        completed();
+      }
+    }
+  }
+
+  for (var i = 0, ii = locations.length; i < ii; i++) {
+    requestURI(locations[i], method, requestHeaders, respondFor(i));
+  }
+
+  function completed() {
+    var statuss = responses.map(function (x) {return x[0]});
+    var headerss = responses.map(function (x) {return x[1]});
+    var contentss = responses.map(function (x) {return x[2]});
+    callback(statuss, headerss, contentss);
+  };
+}
+
+exports.requestURI = requestURI;
+exports.requestURIs = requestURIs;
 

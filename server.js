@@ -119,7 +119,7 @@ function Server(options) {
   }
 }
 Server.prototype = new function () {
-  function _resourceURIForModulePath(modulePath) {
+  function _resourceURIForModulePath(path) {
     if (path.charAt(0) == '/') {
       return this._rootURI + path;
     } else {
@@ -139,7 +139,7 @@ Server.prototype = new function () {
       // Something has gone wrong.
     }
 
-    var resourceURI = _resourceURIForModulePath(modulePath);
+    var resourceURI = this._resourceURIForModulePath(modulePath);
 
     var requestHeaders = mixin({
           'user-agent': 'yajsml'
@@ -257,6 +257,7 @@ Server.prototype = new function () {
     }
   }
 
+  this._resourceURIForModulePath = _resourceURIForModulePath;
   this.handle = handle;
 }();
 
