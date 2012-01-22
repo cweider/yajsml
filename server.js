@@ -183,7 +183,7 @@ Server.prototype = new function () {
       });
       response.write("405: Only the HEAD or GET methods are allowed.")
       response.end();
-    } else if (!resourceURI) {
+    } else if (!modulePath) {
       response.writeHead(400, {
         'content-type': 'text/plain; charset=utf-8'
       });
@@ -253,17 +253,23 @@ Server.prototype = new function () {
         function (statuss, headerss, contents) {
           var status = statuss[0];
           var headers = headerss[0];
-          if (status == 304) { // Skip the content, since it didn't change.
+          if (status == 304) {
+            // Skip the content, since it didn't change.
             respond(status, headers);
-          } else if (request.method == 'HEAD' && status != 405 && status !== undefined) {
+          } else if (request.method == 'HEAD' && status != 405) {
+            // If HEAD wasn't implemented I must GET, else I can guarantee that
+            // my response will not be a 304 and will be 200.
             respond(status, headers);
           } else {
             requestURIs([resourceURI], 'GET', requestHeaders,
               function (statuss, headerss, contents) {
                 var status = statuss[0];
                 var headers = headerss[0];
-                var content = contents[0];
-                if (request.method == 'HEAD') {
+                if (status == 304) {
+                  // Skip the content, since it didn't change.
+                  respond(status, headers);
+                } else if (request.method == 'HEAD') {
+                  // I'll respond with no content
                   respond(status, headers);
                 } else if (request.method == 'GET') {
                   respond(status, headers, content);
