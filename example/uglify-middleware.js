@@ -64,7 +64,7 @@ UglifyMiddleware.prototype = new function () {
 
           res.write = old_res.write;
           res.end = old_res.end;
-          res.write(content, 'utf8');
+          content && res.write(content, 'utf8');
           res.end();
         };
       }
