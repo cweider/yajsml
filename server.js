@@ -285,11 +285,10 @@ Server.prototype = new function () {
         response.end();
       };
 
-      var modulePaths
+      var modulePaths = [modulePath];
+      var preferredPath = modulePath;
       if (this._associator) {
         modulePaths = this._associator.associatedModulePaths(modulePath);
-      } else {
-        modulePaths = [modulePath];
       }
 
       var self = this;
