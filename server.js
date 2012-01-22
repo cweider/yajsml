@@ -71,6 +71,29 @@ function validateURI(uri) {
   }
 }
 
+function packagedDefine(JSONPCallback, moduleMap) {
+  var onFirstEntry = true;
+  content = JSONPCallback + '({\n';
+  for (path in moduleMap) {
+    if (hasOwnProperty(moduleMap, path)) {
+      content += onFirstEntry ? '  ' : ', ';
+      content += toJSLiteral(path) + ': ';
+      if (moduleMap[path] === null) {
+        content += 'null\n';
+      } else {
+        content += 'function (require, exports, module) {\n'
+          + moduleMap[path] + '\n'
+          + '}\n'
+          ;
+      }
+      onFirstEntry = false;
+    }
+  }
+  content += '});\n';
+
+  return content;
+}
+
 /*
   I implement a JavaScript module server.
 */
@@ -212,19 +235,9 @@ Server.prototype = new function () {
           response.end();
         } else {
           if (request.method == 'GET') {
-            var definition;
-            if (status == 200) {
-              definition =
-                'function (require, exports, module) {\n' + content + '\n}';
-            } else {
-              definition = 'null';
-            }
-
-            content =
-                JSONPCallback + '({\n'
-                + toJSLiteral(modulePath) + ': ' + definition
-                + '\n});\n'
-                ;
+            var modules = {};
+            modules[modulePath] = status == 200 ? content : null;
+            content = packagedDefine(JSONPCallback, modules);
           }
 
 
