@@ -1,23 +1,12 @@
-# YAJSML #
+# Yajsml #
 
-## require-kernel ##
+Yajsml is yet another (Common)JS module loader. It is a server-side component that allows JavaScript code to be distributed in a reliable and performant way. It’s three features are:
 
-This is a solid, unadorned implementation of the emerging [CommonJS module standard](http://wiki.commonjs.org/wiki/Modules/1.1).
+ - Proxy pass through for individual resource requests.
+ - Bulk responses for requests of closely associated resources (e.g. dependencies) when a request specifies a JSONP-style callback.
+ - Canonical packaged resources where requests for disparate resources may be fulfilled through a redirect to one canonical packaged resource (which exploits warmed caches).
 
-### Interface ###
-The kernel evaluates to an unnamed function that can be invoked in the following ways:
-
-* `module = require(path)`
-* `require(path1[, path2[, ...]], function (module1[, module2[, ...]]) {})`
-
-The function has the following methods:
-
-* `define`: A method for defining modules. It may be invoked one of several ways. In either case the path is expected to be fully qualified and the module a function with the signature `(require, exports, module)`.
-  * `require.define(path, module)`
-  * `require.define({path1: module1, path2: module2, path3: module3})`
-* `setGlobalKeyPath`: A string (such as `"require"` and `"namespace.req"`) that evaluates to the kernel in the global scope. Asynchronous retrieval of modules using JSONP will happen if and only if this path is defined. Default is `undefined`.
-* `setRootURI`: The URI that non-library paths will be requested relative to. Default is `undefined`.
-* `setLibraryURI`: The URI that library paths (i.e. paths that do not match `/^\.{0,2}\//`) will be requested relative to. Default is `undefined`.
+The tool’s interface is simple enough that there is no need for a prescribed implementation on the client-side. That said, the [require-kernel](https://github.com/cweider/require-kernel) is a terse implementation of a CommonJS module manager that can use all the features in Yajsml.
 
 ## License ##
 Released under zlib
