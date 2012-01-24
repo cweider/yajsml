@@ -216,11 +216,11 @@ function associationsForComplexMapping(packages, associations) {
     }
   ]
 */
-function Associator(associations) {
+function StaticAssociator(associations) {
   this._packageModuleMap = associations[0];
   this._modulePackageMap = associations[1];
 }
-Associator.prototype = new function () {
+StaticAssociator.prototype = new function () {
   function preferredPath(modulePath) {
     if (hasOwnProperty.call(this._modulePackageMap, modulePath)) {
       return this._modulePackageMap[modulePath];
@@ -268,7 +268,7 @@ SimpleAssociator.prototype = new function () {
   this.associatedModulePaths = associatedModulePaths;
 }
 
-exports.Associator = Associator;
+exports.StaticAssociator = StaticAssociator;
 exports.IdentityAssociator = IdentityAssociator;
 exports.SimpleAssociator = SimpleAssociator;
 exports.complexForSimpleMapping = complexForSimpleMapping;
