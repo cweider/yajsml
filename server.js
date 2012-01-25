@@ -231,7 +231,7 @@ Server.prototype = new function () {
         next();
       } else {
         response.writeHead(404, {
-          'content-type': 'text/plain; charset=utf-8';
+          'content-type': 'text/plain; charset=utf-8'
         });
         response.write("404: The requested resource could not be found.");
         response.end();
