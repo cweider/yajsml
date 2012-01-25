@@ -304,7 +304,7 @@ Server.prototype = new function () {
         } else {
           url.pathname = this._libraryPath + preferredPath;
         }
-        response.writeHead(301, {
+        response.writeHead(307, {
           'Content-Type': 'text/plain; charset=utf-8'
         , 'Location': urlutil.format(url)
         });
