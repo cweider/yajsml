@@ -22,6 +22,8 @@
 
 */
 
+var fs = require('fs');
+var crypto = require('crypto');
 var connect = require('connect');
 var cors = require('connect-cors');
 
@@ -32,43 +34,19 @@ compressor._console = console;
 var Yajsml = require('../server');
 var SimpleAssociator = require('../associator').SimpleAssociator;
 
-var yajsml_local = new (Yajsml.Server)({
-  rootURI: 'file://' + __dirname + '/public/javascripts/src'
-, rootPath: 'javascripts/src'
-, libraryURI: 'file://' + __dirname + '/public/javascripts/lib'
-, libraryPath: 'javascripts/lib'
-});
-yajsml_local.setAssociator(new SimpleAssociator());
+var configuration = {};
+for (var i = 1, ii = process.argv.length; i < ii; i++) {
+  if (process.argv[i] == '--configuration') {
+    var configPath = process.argv[i+1];
+    if (!configPath) {
+      throw new Error("Configuration option specified, but no path given.");
+    } else {
+      configuration = JSON.parse(fs.readFileSync(configPath));
+    }
+  }
+}
 
-var instances_controller = new (require('./instances_controller'))
-
-var admin_web = connect.createServer()
-    .use(connect.cookieParser())
-    .use(connect.limit('500kb'))
-    .use(compressor)
-    .use(connect.favicon(__dirname + '/public/images/favicon.ico'))
-    .use(connect.router(function(app) {
-      app.get('/instances', function(req, res, next) {
-        instances_controller.index(req, res);
-      });
-      app.post('/instances', function(req, res, next) {
-        instances_controller.create(req, res);
-      });
-      app.get('/instances/:id', function(req, res, next) {
-        instances_controller.show(req, res);
-      });
-      app.put('/instances/:id', function(req, res, next) {
-        instances_controller.update(req, res);
-      });
-      app.delete('/instances/:id', function(req, res, next) {
-        instances_controller.destroy(req, res);
-      });
-    }))
-    .use(yajsml_local)
-    .use(connect.static(__dirname + '/public'))
-    .listen(8450);
-
-var admin_assets = connect.createServer()
+var assetServer = connect.createServer()
   .use(cors({
       origins: ['*']
     , methods: ['HEAD', 'GET']
@@ -84,6 +62,32 @@ var admin_assets = connect.createServer()
       ]
     }))
   .use(connect.cookieParser())
-  .use(compressor)
-  .use(yajsml_local)
-  .listen(8451);
+  .use(compressor);
+
+for (var i = 0, ii = (configuration['instances'] || []).length; i < ii; i++) {
+  var instanceConfiguration = configuration['instances'][i];
+  var instance = new (Yajsml.Server)(instanceConfiguration);
+
+  if (configuration['associator']) {
+    if (configuration['associator']['type']) {
+      var type = configuration['associator']['type'];
+      if (type == 'identity') {
+        instance.setAssociator(new (associators.IdentityAssociator)());
+      } else if (type == 'simple') {
+        instance.setAssociator(new (associators.SimpleAssociator)());
+      } else if (type == 'static') {
+        var mapping = configuration['associator']['configuration'];
+        var associations =
+            associators.associationsForComplexMapping(
+              associators.complexForSimpleMapping(associations));
+        instance.setAssociator(new (associators.SimpleAssociator)());
+      } else {
+        throw new Error("I do not understand this type of associator.");
+      }
+    }
+  }
+
+  assetServer.use(instance);
+}
+
+assetServer.listen(configuration['port'] || 8450);
