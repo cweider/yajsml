@@ -32,7 +32,7 @@ var compressor = new UglifyMiddleware();
 compressor._console = console;
 
 var Yajsml = require('../server');
-var SimpleAssociator = require('../associator').SimpleAssociator;
+var associators = require('../associator');
 
 var configuration = {};
 for (var i = 1, ii = process.argv.length; i < ii; i++) {
@@ -68,15 +68,16 @@ for (var i = 0, ii = (configuration['instances'] || []).length; i < ii; i++) {
   var instanceConfiguration = configuration['instances'][i];
   var instance = new (Yajsml.Server)(instanceConfiguration);
 
-  if (configuration['associator']) {
-    if (configuration['associator']['type']) {
-      var type = configuration['associator']['type'];
+  if (instanceConfiguration['associator']) {
+    var associatorConfiguration = instanceConfiguration['associator'];
+    if (associatorConfiguration['type']) {
+      var type = associatorConfiguration['type'];
       if (type == 'identity') {
         instance.setAssociator(new (associators.IdentityAssociator)());
       } else if (type == 'simple') {
         instance.setAssociator(new (associators.SimpleAssociator)());
       } else if (type == 'static') {
-        var mapping = configuration['associator']['configuration'];
+        var mapping = associatorConfiguration['configuration'];
         var associations =
             associators.associationsForComplexMapping(
               associators.complexForSimpleMapping(associations));
