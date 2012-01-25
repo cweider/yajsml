@@ -24,6 +24,12 @@
 
 var fs = require('fs');
 var connect = require('connect');
+var cors = require('connect-cors');
+
+// This needs to be a package.
+var UglifyMiddleware = require('./uglify-middleware');
+var compressor = new UglifyMiddleware();
+compressor._console = console;
 
 var Yajsml = require('../index');
 var Server = Yajsml.Server;
@@ -42,6 +48,26 @@ for (var i = 1, ii = process.argv.length; i < ii; i++) {
 }
 
 var assetServer = connect.createServer()
+  .use(cors({
+      origins: ['*']
+    , methods: ['HEAD', 'GET']
+    , headers: [
+        'content-type'
+      , 'accept'
+      , 'date'
+      , 'if-modified-since'
+      , 'last-modified'
+      , 'expires'
+      , 'etag'
+      , 'cache-control'
+      ]
+    }))
+  .use(connect.cookieParser())
+  ;
+
+if (configuration['minify']) {
+  assetServer.use(compressor);
+}
 
 for (var i = 0, ii = (configuration['instances'] || []).length; i < ii; i++) {
   var instanceConfiguration = configuration['instances'][i];
