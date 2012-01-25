@@ -188,7 +188,8 @@ function requestURI(url, method, headers, callback) {
   } else if (parsedURL.protocol == 'https:') {
     client = require('https');
   } else {
-    throw new Error("No implementation for this resource's protocol");
+    throw new Error(
+      "No implementation for this resource's protocol: " + parsedURL.protocol);
   }
 
   var request = client.request({
