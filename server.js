@@ -139,7 +139,7 @@ function packagedDefine(JSONPCallback, moduleMap) {
 */
 function Server(options) {
   function trailingSlash(path) {
-    if (path && path.charAt(path.length) != '/') {
+    if (path && path.charAt(path.length-1) != '/') {
       return path + '/';
     } else {
       return path;
@@ -185,7 +185,7 @@ function Server(options) {
 Server.prototype = new function () {
   function _resourceURIForModulePath(path) {
     if (path.charAt(0) == '/') {
-      return this._rootURI + path;
+      return this._rootURI + path.slice(1);
     } else {
       return this._libraryURI + path;
     }
@@ -201,7 +201,7 @@ Server.prototype = new function () {
 
     var modulePath;
     if (path.indexOf(this._rootPath) == 0) {
-      modulePath = path.slice(this._rootPath.length);
+      modulePath = '/' + path.slice(this._rootPath.length);
     } else if (this._libraryURI && path.indexOf(this._libraryPath) == 0) {
       modulePath = path.slice(this._libraryPath.length);
     } else {
