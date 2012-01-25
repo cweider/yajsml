@@ -224,14 +224,14 @@ Server.prototype = new function () {
         'allow': 'HEAD, GET'
       , 'content-type': 'text/plain; charset=utf-8'
       });
-      response.write("405: Only the HEAD or GET methods are allowed.")
+      response.write("405: Only the HEAD or GET methods are allowed.");
       response.end();
     } else if (!modulePath) {
       if (next) {
         next();
       } else {
         response.writeHead(404, {
-          'content-type': 'text/plain; charset=utf-8'
+          'content-type': 'text/plain; charset=utf-8';
         });
         response.write("404: The requested resource could not be found.");
         response.end();
@@ -242,9 +242,18 @@ Server.prototype = new function () {
       requestURI(resourceURI, 'GET', requestHeaders,
         function (status, headers, content) {
           var responseHeaders = selectProperties(headers, HEADER_WHITELIST);
-          if (status == 200 && ('content-type' in responseHeaders)) {
+          if (status == 200) {
             responseHeaders['content-type'] =
-                'application/javascript; charset=utf-8'
+                'application/javascript; charset=utf-8';
+          } else {
+            if (status == 404) {
+              responseHeaders['content-type'] = 'text/plain; charset=utf-8';
+              content = "404: The requested resource could not be found.";
+            } else {
+              // Don't bother giving useful stuff in these cases.
+              delete responseHeaders['content-type'];
+              content = undefined;
+            }
           }
           response.writeHead(status, responseHeaders);
           if (request.method == 'GET') {
