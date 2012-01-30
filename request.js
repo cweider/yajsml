@@ -196,7 +196,7 @@ function requestURI(url, method, headers, callback, redirectCount) {
   }
 
   var request = client.request({
-    host: parsedURL.host
+    hostname: parsedURL.hostname
   , port: parsedURL.port
   , path: parsedURL.path
   , method: method
