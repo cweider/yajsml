@@ -1,6 +1,6 @@
 # Yajsml #
 
-Yajsml is yet another (Common)JS module loader. It is a server-side component that allows JavaScript code to be distributed in a reliable and performant way. It’s three features are:
+Yajsml is yet another (Common)JS module loader. It is a server-side component that allows JavaScript code to be distributed in a reliable and performant way. Its three features are:
 
  - Proxy pass through for individual resource requests.
  - Bulk responses for requests of closely associated resources (e.g. dependencies) when a request specifies a JSONP-style callback.
