@@ -110,6 +110,15 @@ function mergeHeaders(h_1, h_2, h_n) {
     headers['expires'] = (new Date(value)).toUTCString();
   }
 
+  values = headersList.map(function (h) {
+    var expires = (h['cache-control'] || '').match(/(?:max-age=(\d+))?/)[1];
+    return parseInt(expires, 10);
+  });
+  if (values.every(function (value) {return !isNaN(value)})) {
+    value = Math.min.apply(this, values);
+    headers['cache-control'] = 'max-age=' + value.toString(10);
+  }
+
   return headers;
 }
 
