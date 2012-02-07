@@ -103,11 +103,11 @@ function mergeHeaders(h_1, h_2, h_n) {
   }
 
   values = headersList.map(function (h) {
-    return parseInt(h['expires'], 10);
+    return Date.parse(h['expires']);
   });
   if (values.every(function (value) {return !isNaN(value)})) {
     value = Math.min.apply(this, values);
-    headers['expires'] = value.toString(10);
+    headers['expires'] = (new Date(value)).toUTCString();
   }
 
   return headers;
