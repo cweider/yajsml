@@ -145,6 +145,13 @@ function packagedDefine(JSONPCallback, moduleMap) {
   return content;
 }
 
+function notModified(requestHeaders, responseHeaders) {
+  var lastModified = Date.parse(responseHeaders['last-modified']);
+  var modifiedSince = Date.parse(requestHeaders['if-modified-since']);
+  return ((requestHeaders['etag'] && requestHeaders['etag'] == responseHeaders['etag'])
+      || (lastModified && lastModified <= modifiedSince));
+}
+
 /*
   I implement a JavaScript module server.
 */
@@ -256,15 +263,16 @@ Server.prototype = new function () {
           if (status == 200) {
             responseHeaders['content-type'] =
                 'application/javascript; charset=utf-8';
+          } else if (status == 404) {
+            responseHeaders['content-type'] = 'text/plain; charset=utf-8';
+            content = "404: The requested resource could not be found.";
           } else {
-            if (status == 404) {
-              responseHeaders['content-type'] = 'text/plain; charset=utf-8';
-              content = "404: The requested resource could not be found.";
-            } else {
-              // Don't bother giving useful stuff in these cases.
-              delete responseHeaders['content-type'];
-              content = undefined;
+            if (notModified(requestHeaders, responseHeaders)) {
+              status = 304;
             }
+            // Don't bother giving useful stuff in these cases.
+            delete responseHeaders['content-type'];
+            content = undefined;
           }
           response.writeHead(status, responseHeaders);
           if (request.method == 'GET') {
@@ -289,21 +297,12 @@ Server.prototype = new function () {
         responseHeaders['content-type'] =
             'application/javascript; charset=utf-8';
 
-        if (status == 304) {
-          response.writeHead(status, responseHeaders);
+        if (status == 304 || notModified(requestHeaders, responseHeaders)) {
+          response.writeHead(304, responseHeaders);
         } else {
-          var lastModified = new Date(headers['last-modified']);
-          var modifiedSince = new Date(requestHeaders['if-modified-since']);
-          if (lastModified && lastModified <= modifiedSince) {
-            response.writeHead(304, responseHeaders);
-          } else if (requestHeaders['etag']
-              && requestHeaders['etag'] == headers['etag']) {
-            response.writeHead(304, responseHeaders);
-          } else {
-            response.writeHead(200, responseHeaders);
-            if (request.method == 'GET') {
-              content && response.write(content);
-            }
+          response.writeHead(200, responseHeaders);
+          if (request.method == 'GET') {
+            content && response.write(content);
           }
         }
         response.end();
@@ -345,9 +344,8 @@ Server.prototype = new function () {
             return m && m == s ? m : undefined;
           });
           var headers = mergeHeaders.apply(this, headerss);
-          if (status == 304) {
-            // Skip the content, since it didn't change.
-            respond(status, headers);
+          if (status == 304 || notModified(requestHeaders, headers)) {
+            respond(304, headers);
           } else if (request.method == 'HEAD' && status != 405) {
             // If HEAD wasn't implemented I must GET, else I can guarantee that
             // my response will not be a 304 and will be 200.
