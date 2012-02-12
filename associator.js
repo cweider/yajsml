@@ -22,6 +22,10 @@
 
 */
 
+function hasOwnProperty(o, k) {
+  return Object.prototype.hasOwnProperty.call(o, k);
+}
+
 /*
   Associations describe the interfile relationships.
 
@@ -68,7 +72,7 @@ function complexForSimpleMapping(definitions) {
     var modules = definition['modules'];
 
     modules.forEach(function (module) {
-      if (!hasOwnProperty.call(associations, module)) {
+      if (!hasOwnProperty(associations, module)) {
         associations[module] = [undefined, emptyAssociation.concat()];
       }
       associations[module][1][i] = true;
@@ -161,9 +165,9 @@ function associationsForComplexMapping(packages, associations) {
   packages.forEach(function (package, i) {
     if (package === undefined) {
       // BAD: Package has no purpose.
-    } else if (hasOwnProperty.call(packageSet, package)) {
+    } else if (hasOwnProperty(packageSet, package)) {
       // BAD: Duplicate package.
-    } else if (!hasOwnProperty.call(associations, package)) {
+    } else if (!hasOwnProperty(associations, package)) {
       // BAD: Package primary doesn't exist for this package
     } else if (associations[package][0] != i) {
       // BAD: Package primary doesn't agree
@@ -174,14 +178,14 @@ function associationsForComplexMapping(packages, associations) {
   var packageModuleMap = {};
   var modulePackageMap = {};
   for (var path in associations) {
-    if (hasOwnProperty.call(associations, path)) {
+    if (hasOwnProperty(associations, path)) {
       var association = associations[path];
 
       modulePackageMap[path] = packages[association[0]];
       association[1].forEach(function (include, i) {
         if (include) {
           var package = packages[i];
-          if (!hasOwnProperty.call(packageModuleMap, package)) {
+          if (!hasOwnProperty(packageModuleMap, package)) {
             packageModuleMap[package] = [];
           }
           packageModuleMap[package].push(path);
@@ -224,14 +228,14 @@ function StaticAssociator(associations) {
 }
 StaticAssociator.prototype = new function () {
   function preferredPath(modulePath) {
-    if (hasOwnProperty.call(this._modulePackageMap, modulePath)) {
+    if (hasOwnProperty(this._modulePackageMap, modulePath)) {
       return this._modulePackageMap[modulePath];
     } else {
       return modulePath;
     }
   }
   function associatedModulePaths(modulePath) {
-    if (hasOwnProperty.call(this._packageModuleMap, modulePath)) {
+    if (hasOwnProperty(this._packageModuleMap, modulePath)) {
       return this._packageModuleMap[modulePath];
     } else {
       return [modulePath];
