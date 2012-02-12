@@ -264,6 +264,7 @@ StaticAssociator.prototype = new function () {
     }
   }
   function associatedModulePaths(modulePath) {
+    var modulePath = this.preferredPath(modulePath);
     if (hasOwnProperty(this._packageModuleMap, modulePath)) {
       return this._packageModuleMap[modulePath];
     } else {
