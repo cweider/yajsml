@@ -27,22 +27,88 @@ function hasOwnProperty(o, k) {
 }
 
 /*
-  Associations describe the interfile relationships.
+  Produce fully structured module mapings from a simple description.
 
   INPUT:
-  [ { modules:
+  { '/module/path/1.js':
+    [ '/module/path/1.js'
+    , '/module/path/2.js'
+    , '/module/path/3.js'
+    , '/module/path/4.js'
+    ]
+  , '/module/path/4.js':
+    [ '/module/path/3.js'
+    , '/module/path/4.js'
+    , '/module/path/5.js'
+    ]
+  }
+
+  OUTPUT:
+  [ { '/module/path/1.js':
       [ '/module/path/1.js'
       , '/module/path/2.js'
       , '/module/path/3.js'
       , '/module/path/4.js'
       ]
-    }
-  , { modules:
+    , '/module/path/4.js':
       [ '/module/path/3.js'
       , '/module/path/4.js'
       , '/module/path/5.js'
       ]
-    , primary: '/module/path/4.js'
+    }
+  , { '/module/path/1.js': '/module/path/1.js'
+    , '/module/path/2.js': '/module/path/1.js'
+    , '/module/path/3.js': '/module/path/4.js'
+    , '/module/path/4.js': '/module/path/4.js'
+    , '/module/path/5.js': '/module/path/4.js'
+    }
+  ]
+
+*/
+function associationsForSimpleMapping(mapping) {
+  var packageModuleMap = {};
+  var modulePackageMap = {};
+
+  for (var primaryKey in mapping) {
+    if (hasOwnProperty(packageModuleMap, primaryKey)) {
+      throw new Error("A packaging is for the primary key "
+        + JSON.stringify(primaryKey) + " is already defined.");
+    } else {
+      var modules = mapping[primaryKey].concat([]);
+      packageModuleMap[primaryKey] = modules;
+      modules.forEach(function (key) {
+        // Don't overwrite in this case.
+        if (!mapping.hasOwnProperty(key) || key == primaryKey) {
+          modulePackageMap[key] = primaryKey;
+        }
+      });
+    }
+  }
+  return [packageModuleMap, modulePackageMap];
+}
+
+
+/*
+  Inverse of `associationsForComplexMapping`.
+
+  INPUT:
+  [ { '/module/path/1.js':
+      [ '/module/path/1.js'
+      , '/module/path/2.js'
+      , '/module/path/3.js'
+      , '/module/path/4.js'
+      ]
+    , '/module/path/4.js':
+      [ '/module/path/3.js'
+      , '/module/path/4.js'
+      , '/module/path/5.js'
+      ]
+    }
+  , { '/module/path/1.js': '/module/path/1.js'
+    , '/module/path/2.js': '/module/path/1.js'
+    , '/module/path/3.js': '/module/path/4.js'
+    , '/module/path/4.js': '/module/path/4.js'
+    , '/module/path/5.js': '/module/path/4.js'
     }
   ]
 
@@ -58,70 +124,32 @@ function hasOwnProperty(o, k) {
     }
   ]
 */
-function complexForSimpleMapping(definitions) {
-  var packages = new Array(definitions.length);
-  var associations = {};
-  var emptyAssociation = [];
-  for (var i = 0, ii = definitions.length; i < ii; i++) {
-    emptyAssociation[i] = false;
+function complexMappingForAssociations(associations) {
+  var packageModuleMap = associations[0];
+  var modulePackageMap = associations[1];
+
+  var packages = [];
+  var mapping = {};
+
+  for (var key in packageModuleMap) {
+    packages.push(key);
   }
 
-  // Define associations.
-  definitions.forEach(function (definition, i) {
-    var primary = definition['primary'];
-    var modules = definition['modules'];
-
-    modules.forEach(function (module) {
-      if (!hasOwnProperty(associations, module)) {
-        associations[module] = [undefined, emptyAssociation.concat()];
+  var blankMapping = [];
+  for (var i = 0, ii = packages.length; i < ii; i++) {
+    blankMapping[i] = false;
+  }
+  for (var i = 0, ii = packages.length; i < ii; i++) {
+    packageModuleMap[packages[i]].forEach(function (key) {
+      if (!hasOwnProperty(mapping, key)) {
+        mapping[key] = [i, blankMapping.concat([])];
       }
-      associations[module][1][i] = true;
+      mapping[key][0] = i;
+      mapping[key][1][i] = true;
     });
-  });
+  }
 
-  // Modules specified in packages as primary get highest precedence.
-  definitions.forEach(function (definition, i) {
-    var primary = definition['primary'];
-    var modules = definition['modules'];
-    var containsPrimary = false;
-    primary && modules.forEach(function (module) {
-      if (module == primary) {
-        containsPrimary = true;
-        if (associations[module][0] !== undefined) {
-          // BAD: Two packages specify this as primary
-        } else {
-          associations[module][0] = i;
-          packages[i] = module;
-        }
-      }
-    });
-  });
-
-  // Other modules in packages specifying primary.
-  definitions.forEach(function (definition, i) {
-    var primary = definition['primary'];
-    var modules = definition['modules'];
-    primary && modules.forEach(function (module) {
-      if (associations[module][0] === undefined) {
-        associations[module][0] = i;
-        packages[i] = packages[i] || module;
-      }
-    });
-  });
-
-  // All others go to the first package using it.
-  definitions.forEach(function (definition, i) {
-    var primary = definition['primary'];
-    var modules = definition['modules'];
-    modules.forEach(function (module) {
-      if (associations[module][0] === undefined) {
-        associations[module][0] = i;
-        packages[i] = module;
-      }
-    });
-  });
-
-  return [packages, associations]
+  return [packages, mapping];
 }
 
 /*
@@ -277,5 +305,7 @@ SimpleAssociator.prototype = new function () {
 exports.StaticAssociator = StaticAssociator;
 exports.IdentityAssociator = IdentityAssociator;
 exports.SimpleAssociator = SimpleAssociator;
-exports.complexForSimpleMapping = complexForSimpleMapping;
+
+exports.associationsForSimpleMapping = associationsForSimpleMapping;
+exports.complexMappingForAssociations = complexMappingForAssociations;
 exports.associationsForComplexMapping = associationsForComplexMapping;
