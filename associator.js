@@ -250,23 +250,24 @@ function associationsForComplexMapping(packages, associations) {
     }
   ]
 */
-function StaticAssociator(associations) {
+function StaticAssociator(associations, next) {
   this._packageModuleMap = associations[0];
   this._modulePackageMap = associations[1];
+  this._next = next || new IdentityAssociator();
 }
 StaticAssociator.prototype = new function () {
   function preferredPath(modulePath) {
     if (hasOwnProperty(this._modulePackageMap, modulePath)) {
       return this._modulePackageMap[modulePath];
     } else {
-      return modulePath;
+      return this._next.preferredPath(modulePath);
     }
   }
   function associatedModulePaths(modulePath) {
     if (hasOwnProperty(this._packageModuleMap, modulePath)) {
       return this._packageModuleMap[modulePath];
     } else {
-      return [modulePath];
+      return this._next.associatedModulePaths(modulePath);
     }
   }
   this.preferredPath = preferredPath;
