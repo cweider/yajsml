@@ -23,4 +23,4 @@
 */
 
 exports.Server = require('./server').Server;
-exports.associator = require('./associator');
+exports.associators = require('./associators');

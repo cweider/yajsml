@@ -33,7 +33,7 @@ compressor._console = console;
 
 var Yajsml = require('../index');
 var Server = Yajsml.Server;
-var associators = Yajsml.associator;
+var associators = Yajsml.associators;
 
 var configuration = {};
 for (var i = 1, ii = process.argv.length; i < ii; i++) {
