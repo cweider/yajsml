@@ -30,7 +30,7 @@ var requestURI = require('./request').requestURI;
 var requestURIs = require('./request').requestURIs;
 
 var HEADER_WHITELIST =
-    ['date', 'last-modified', 'cache-control', 'content-type'];
+    ['date', 'last-modified', 'expires', 'cache-control', 'content-type'];
 
 function hasOwnProperty(o, k) {
   return Object.prototype.hasOwnProperty.call(o, k);
