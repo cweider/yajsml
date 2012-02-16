@@ -296,6 +296,8 @@ Server.prototype = new function () {
         var responseHeaders = selectProperties(headers, HEADER_WHITELIST);
         responseHeaders['content-type'] =
             'application/javascript; charset=utf-8';
+        // JSONP requires a guard against incorrect sniffing.
+        responseHeaders['x-content-type-options'] = 'nosniff';
 
         if (status == 304 || notModified(requestHeaders, responseHeaders)) {
           response.writeHead(304, responseHeaders);
