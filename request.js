@@ -43,6 +43,12 @@ var fs_client = (new function () {
 
   function request(options, callback) {
     var path = options.path;
+    path = decodeURIComponent(path);
+    if (path.charAt(0) == '/') { // Account for '/C:\Windows' type of paths.
+      path = pathutil.resolve('/', path.slice(1));
+    }
+    path = pathutil.normalize(path);
+
     var method = options.method;
 
     var response = new (require('events').EventEmitter);
