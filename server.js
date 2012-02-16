@@ -53,6 +53,10 @@ function escapeJavaScriptData(text) {
   });
 }
 
+// Only allow a subset of JavaScript expressions that are reasonable and cannot
+// look like HTML (e.g. `require.define`, `requireForKey("key").define`).
+var JSONP_CALLBACK_EXPRESSION = /^[a-zA-Z0-9$:._'"\\()\[\]\{\}]+$/;
+
 function mixin(object1, object2, objectN) {
   var object = {};
   for (var i = 0, ii = arguments.length; i < ii; i++) {
@@ -299,6 +303,13 @@ Server.prototype = new function () {
         response.write("400: The parameter `callback` must be non-empty.")
         response.end();
         return;
+      } else if (!JSONPCallback.match(JSONP_CALLBACK_EXPRESSION)) {
+        response.writeHead(400, {
+          'content-type': 'text/plain; charset=utf-8'
+        });
+        response.write("400: The parameter `callback` must match "
+            + JSONP_CALLBACK_EXPRESSION + ".")
+        response.end();
       }
 
       var respond = function (status, headers, content) {
