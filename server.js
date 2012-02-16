@@ -36,12 +36,21 @@ function hasOwnProperty(o, k) {
   return Object.prototype.hasOwnProperty.call(o, k);
 }
 
-function toJSLiteral(object) {
+function toJSLiteral(string) {
   // Remember, JSON is not a subset of JavaScript. Some line terminators must
   // be escaped manually.
-  var result = JSON.stringify(object);
+  var result = '"' + escapeJavaScriptData(string) + '"';
   result = result.replace('\u2028', '\\u2028').replace('\u2029', '\\u2029');
   return result;
+}
+
+// OSWASP Guidlines: escape all non alphanumeric characters in ASCII space.
+var JAVASCRIPT_CHARACTERS_EXPRESSION =
+    /[\x00-\x2F\x3A-\x40\5B-\x60\x7B-\xFF]/g;
+function escapeJavaScriptData(text) {
+  return text && text.replace(JAVASCRIPT_CHARACTERS_EXPRESSION, function (c) {
+    return "\\x" + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+  });
 }
 
 function mixin(object1, object2, objectN) {
