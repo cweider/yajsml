@@ -36,6 +36,42 @@ function hasOwnProperty(o, k) {
   return Object.prototype.hasOwnProperty.call(o, k);
 }
 
+// Normal `path.normalize` uses backslashes on Windows, so this is a custom
+// implimentation, sigh.
+function normalizePath(path) {
+  var pathComponents1 = path.split('/');
+  var pathComponents2 = [];
+
+  var component;
+  for (var i = 0, ii = pathComponents1.length; i < ii; i++) {
+    component = pathComponents1[i];
+    switch (component) {
+      case '':
+        if (i == ii - 1) {
+          pathComponents2.push(component);
+          break;
+        }
+      case '.':
+        if (i == 0) {
+          pathComponents2.push(component);
+        }
+        break;
+      case '..':
+        if (pathComponents2.length > 1
+          || (pathComponents2.length == 1
+            && pathComponents2[0] != ''
+            && pathComponents2[0] != '.')) {
+          pathComponents2.pop();
+          break;
+        }
+      default:
+        pathComponents2.push(component);
+    }
+  }
+
+  return pathComponents2.join('/');
+}
+
 function toJSLiteral(string) {
   // Remember, JSON is not a subset of JavaScript. Some line terminators must
   // be escaped manually.
@@ -228,7 +264,7 @@ Server.prototype = new function () {
 
   function handle(request, response, next) {
     var url = require('url').parse(request.url, true);
-    var path = pathutil.normalize(url.pathname);
+    var path = normalizePath(url.pathname);
 
     var modulePath;
     if (path.indexOf(this._rootPath) == 0) {
