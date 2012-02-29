@@ -36,6 +36,20 @@ function hasOwnProperty(o, k) {
   return Object.prototype.hasOwnProperty.call(o, k);
 }
 
+function relativePath(path, rootPath) {
+  var pathSplit = path.split('/');
+  var rootSplit = rootPath.split('/');
+  var pathPart;
+  var rootPart;
+  while ((pathPart = pathSplit.shift()) == (rootPart = rootSplit.shift())) {;}
+
+  return pathutil.join(
+    (new Array(rootSplit.length+1)).join('../')
+  , pathPart
+  , pathSplit.join('/')
+  );
+}
+
 // Normal `path.normalize` uses backslashes on Windows, so this is a custom
 // implimentation, sigh.
 function normalizePath(path) {
@@ -248,6 +262,10 @@ function Server(options) {
     throw "The paths " + JSON.stringify(this._rootPath) + " and " +
         JSON.stringify(this._libraryPath) + " are ambiguous.";
   }
+
+  if (options.baseURI) {
+    this._baseURI = trailingSlash(options.baseURI);
+  }
 }
 Server.prototype = new function () {
   function _resourceURIForModulePath(path) {
@@ -376,14 +394,26 @@ Server.prototype = new function () {
       }
 
       if (preferredPath != modulePath) {
+        var location;
         if (preferredPath.charAt(0) == '/') {
-          url.pathname = this._rootPath + preferredPath.slice(1);
+          location = this._rootPath + preferredPath.slice(1);
         } else {
-          url.pathname = this._libraryPath + preferredPath;
+          location = this._libraryPath + preferredPath;
         }
+
+        if (this._baseURI) { // Full URIs for location are opt-in.
+          location = this._baseURI + location;
+        } else {
+          location = relativePath(
+            location
+          , path.split('/').slice(0,-1).join('/')
+          );
+        }
+        location += '?' + require('querystring').stringify(url.query);
+
         response.writeHead(307, {
           'Content-Type': 'text/plain; charset=utf-8'
-        , 'Location': urlutil.format(url)
+        , 'Location': location
         });
         response.write("307: Resource moved temporarily.");
         response.end();
