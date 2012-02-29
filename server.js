@@ -86,10 +86,10 @@ function normalizePath(path) {
   return pathComponents2.join('/');
 }
 
-function toJSLiteral(string) {
+function toJSLiteral(string, exceptions) {
   // Remember, JSON is not a subset of JavaScript. Some line terminators must
   // be escaped manually.
-  var result = '"' + escapeJavaScriptData(string) + '"';
+  var result = '"' + escapeJavaScriptData(string, exceptions) + '"';
   result = result.replace('\u2028', '\\u2028').replace('\u2029', '\\u2029');
   return result;
 }
@@ -97,9 +97,13 @@ function toJSLiteral(string) {
 // OSWASP Guidlines: escape all non alphanumeric characters in ASCII space.
 var JAVASCRIPT_CHARACTERS_EXPRESSION =
     /[\x00-\x2F\x3A-\x40\5B-\x60\x7B-\xFF]/g;
-function escapeJavaScriptData(text) {
+function escapeJavaScriptData(text, exceptions) {
   return text && text.replace(JAVASCRIPT_CHARACTERS_EXPRESSION, function (c) {
-    return "\\x" + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    if (exceptions && exceptions.indexOf(c) != -1) {
+      return c;
+    } else {
+      return "\\x" + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }
   });
 }
 
@@ -191,7 +195,7 @@ function packagedDefine(JSONPCallback, moduleMap) {
   for (path in moduleMap) {
     if (hasOwnProperty(moduleMap, path)) {
       content += onFirstEntry ? '  ' : ', ';
-      content += toJSLiteral(path) + ': ';
+      content += toJSLiteral(path, './-_') + ': ';
       if (moduleMap[path] === null) {
         content += 'null\n';
       } else {
