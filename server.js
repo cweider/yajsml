@@ -385,8 +385,7 @@ Server.prototype = new function () {
           'Content-Type': 'text/plain; charset=utf-8'
         , 'Location': urlutil.format(url)
         });
-        response.write("307: Resource moved temporarily to "
-          + require('url').format(url));
+        response.write("307: Resource moved temporarily.");
         response.end();
         return;
       }
