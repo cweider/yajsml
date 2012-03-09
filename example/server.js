@@ -35,7 +35,7 @@ var Yajsml = require('yajsml');
 var Server = Yajsml.Server;
 var associators = Yajsml.associators;
 
-var configuration = {};
+var configuration;
 for (var i = 1, ii = process.argv.length; i < ii; i++) {
   if (process.argv[i] == '--configuration') {
     var configPath = process.argv[i+1];
@@ -45,6 +45,10 @@ for (var i = 1, ii = process.argv.length; i < ii; i++) {
       configuration = JSON.parse(fs.readFileSync(configPath));
     }
   }
+}
+
+if (!configuration) {
+  throw new Error("No configuration option given.");
 }
 
 var assetServer = connect.createServer()
