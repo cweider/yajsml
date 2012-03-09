@@ -31,7 +31,7 @@ var UglifyMiddleware = require('./uglify-middleware');
 var compressor = new UglifyMiddleware();
 compressor._console = console;
 
-var Yajsml = require('../index');
+var Yajsml = require('yajsml');
 var Server = Yajsml.Server;
 var associators = Yajsml.associators;
 
