@@ -96,7 +96,7 @@ function toJSLiteral(string, exceptions) {
 
 // OSWASP Guidlines: escape all non alphanumeric characters in ASCII space.
 var JAVASCRIPT_CHARACTERS_EXPRESSION =
-    /[\x00-\x2F\x3A-\x40\5B-\x60\x7B-\xFF]/g;
+    /[\x00-\x2F\x3A-\x40\x5B-\x60\x7B-\xFF]/g;
 function escapeJavaScriptData(text, exceptions) {
   return text && text.replace(JAVASCRIPT_CHARACTERS_EXPRESSION, function (c) {
     if (exceptions && exceptions.indexOf(c) != -1) {
