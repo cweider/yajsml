@@ -25,6 +25,7 @@
 var fs = require('fs');
 var connect = require('connect');
 var cors = require('connect-cors');
+var request = require('request');
 
 // This needs to be a package.
 var UglifyMiddleware = require('./uglify-middleware');
@@ -73,31 +74,65 @@ if (configuration['minify']) {
   assetServer.use(compressor);
 }
 
-for (var i = 0, ii = (configuration['instances'] || []).length; i < ii; i++) {
-  var instanceConfiguration = configuration['instances'][i];
+function interpolatePath(path, values) {
+  return path && path.replace(/(\/)?:(\w+)/, function (_, slash, key) {
+    return (slash ? '/' : '') + encodeURIComponent(String((values || {})[key]));
+  });
+}
+
+function interpolateURL(url, values) {
+  var parsed = require('url').parse(url);
+  if (parsed) {
+    parsed.pathname = interpolatePath(parsed.pathname, values);
+  }
+  return require('url').format(parsed);
+}
+
+function handle(req, res, next) {
+  var instanceConfiguration = {
+    rootPath: configuration['rootPath'] && interpolatePath(configuration['rootPath'], req.params)
+  , rootURI: configuration['rootURI'] && interpolateURL(configuration['rootURI'], req.params)
+  , libraryPath: configuration['libraryPath'] && interpolatePath(configuration['libraryPath'], req.params)
+  , libraryURI: configuration['libraryURI'] && interpolateURL(configuration['libraryURI'], req.params)
+  };
   var instance = new (Yajsml.Server)(instanceConfiguration);
 
-  if (instanceConfiguration['associator']) {
-    var associatorConfiguration = instanceConfiguration['associator'];
-    if (associatorConfiguration['type']) {
-      var type = associatorConfiguration['type'];
-      if (type == 'identity') {
-        instance.setAssociator(new (associators.IdentityAssociator)());
-      } else if (type == 'simple') {
-        instance.setAssociator(new (associators.SimpleAssociator)());
-      } else if (type == 'static') {
-        var mapping = associatorConfiguration['configuration'];
-        var associations =
-            associators.associationsForComplexMapping(
-              associators.complexForSimpleMapping(associations));
+  if (configuration['manifest']) {
+    request({
+        url: interpolateURL(configuration['manifest'], req.params)
+      , method: 'GET'
+      , encoding: 'utf8'
+      , timeout: 2000
+      }
+    , function (error, res, content) {
+      if (error || res.statusCode != '200') {
+        // Silently use default associator
         instance.setAssociator(new (associators.SimpleAssociator)());
       } else {
-        throw new Error("I do not understand this type of associator.");
+        try {
+          var manifest = JSON.parse(content);
+          var associations =
+              associators.associationsForSimpleMapping(manifest);
+          var associator = new (associators.StaticAssociator)(associations);
+          instance.setAssociator(associator);
+        } catch (e) {
+          instance.setAssociator(new (associators.SimpleAssociator)());
+        }
       }
-    }
+      respond();
+    });
+  } else {
+    instance.setAssociator(new (associators.SimpleAssociator)());
+    respond();
   }
 
-  assetServer.use(instance);
+  function respond() {
+    instance.handle(req, res, next);
+  }
 }
+assetServer.use(connect.router(function (app) {
+  configuration['rootPath'] && app.all(configuration['rootPath'] + '/*', handle);
+  configuration['libraryPath'] && app.all(configuration['libraryPath'] + '/*', handle);
+}));
 
 assetServer.listen(configuration['port'] || 8450);
