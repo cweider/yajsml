@@ -1,3 +1,4 @@
+#! /usr/bin/node
 /*!
 
   Copyright (c) 2011 Chad Weider
