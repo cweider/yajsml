@@ -368,6 +368,7 @@ Server.prototype = new function () {
         response.write("400: The parameter `callback` must match "
             + JSONP_CALLBACK_EXPRESSION + ".")
         response.end();
+        return;
       }
 
       var respond = function (status, headers, content) {
