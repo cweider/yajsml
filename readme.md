@@ -9,13 +9,22 @@
 /__/   /__/            \__/
 </pre>
 
-Yajsml is yet another (Common)JS module loader. It is a server-side component that allows JavaScript code to be distributed in a reliable and performant way. Its three features are:
+Yajsml is yet another (Common)JS module loader. It is a server-side component
+that allows JavaScript code to be distributed in a reliable and performant way.
+Its three features are:
 
  - Proxy pass through for individual resource requests.
- - Bulk responses for requests of closely associated resources (e.g. dependencies) when a request specifies a JSONP-style callback.
- - Canonical packaged resources where requests for disparate resources may be fulfilled through a redirect to one canonical packaged resource (which exploits warmed caches).
+ - Bulk responses for requests of closely associated resources (e.g.
+   dependencies) when a request specifies a JSONP-style callback.
+ - Canonical packaged resources where requests for disparate resources may be
+   fulfilled through a redirect to one canonical packaged resource (which
+   exploits warmed caches).
 
-The tool’s interface is simple enough that there is no need for a prescribed implementation on the client-side. That said, the [require-kernel](https://github.com/cweider/require-kernel) is a terse implementation of a CommonJS module manager that can use all the features in Yajsml.
+The tool’s interface is simple enough that there is no need for a prescribed
+implementation on the client-side. That said, the
+[require-kernel](https://github.com/cweider/require-kernel) is a terse
+implementation of a CommonJS module manager that can use all the features in
+yajsml.
 
 ## License ##
 Released under the MIT license.
@@ -39,4 +48,3 @@ Released under the MIT license.
     LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
     DEALINGS IN THE SOFTWARE.
-
