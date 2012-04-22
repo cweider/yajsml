@@ -1,5 +1,14 @@
 # Yajsml #
 
+<pre>
+                o          /|
+    _  _  __  _  _   _ _  / |
+   /  / /  | / _/| / / / / /
+  |__/ /\_/\/ /\_\/ / |_/_/
+ ___/_/ ___/_/  _______/___
+/__/   /__/            \__/
+</pre>
+
 Yajsml is yet another (Common)JS module loader. It is a server-side component that allows JavaScript code to be distributed in a reliable and performant way. Its three features are:
 
  - Proxy pass through for individual resource requests.
