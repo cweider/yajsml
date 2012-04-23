@@ -3,7 +3,8 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <title>Yajsml by cweider</title>
+  	<title>Yajsml: Yet Another (Common)JS Module Loader</title>
+    <meta name="description" content="Yajsml is the radically simple yet capable module loader for JavaScript.">
     <link rel="stylesheet" href="stylesheets/styles.css">
     <link rel="stylesheet" href="stylesheets/pygment_trac.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
@@ -14,68 +15,157 @@
     <!--[if lt IE 8]>
     <link rel="stylesheet" href="stylesheets/ie.css">
     <![endif]-->
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-
+    <meta name="viewport" content="width=320, initial-scale=1.0, maximum-scale=1.0">
   </head>
+
   <body>
+  	<div id="content">
+  	  <header>
+        yajsml
+      </header>
 
-      <div id="header">
-        <nav>
-          <li class="fork"><a href="https://github.com/cweider/yajsml">Fork On GitHub</a></li>
-          <li class="downloads"><a href="https://github.com/cweider/yajsml/zipball/master">ZIP</a></li>
-          <li class="downloads"><a href="https://github.com/cweider/yajsml/tarball/master">TAR</a></li>
-          <li class="title">DOWNLOADS</li>
-        </nav>
-      </div><!-- end header -->
+    	<div class="inner">
 
-    <div class="wrapper">
+      <section class="columned-2">
+        <p>
+          Yajsml is yet another (Common)JS module loader. It is a dead simple
+          server with a minimal interface and no prescriptive dependencies on
+          the client.
+        </p>
 
-      <section>
-        <div id="title">
-          <h1>Yajsml</h1>
-          <p>Yet another (Common)JS module loader</p>
-          <hr>
-          <span class="credits left">Project maintained by <a href="https://github.com/cweider">cweider</a></span>
-          <span class="credits right">Hosted on GitHub Pages &mdash; Theme by <a href="http://twitter.com/#!/michigangraham">mattgraham</a></span>
-        </div>
+        <a href="http://github.com/cweider/yajsml"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://a248.e.akamai.net/camo.github.com/e6bef7a091f5f3138b8cd40bc3e114258dd68ddf/687474703a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f7265645f6161303030302e706e67" alt="Fork me on GitHub"></a>
 
-        <h1>Yajsml</h1>
+        <h2>Philosophy</h2>
+        <p>
+          Yajsml’s goal is to provide a radically simple service that enables
+          cheap and incremental optimization of your JavaScript distribution
+          model – from unpackaged synchronous includes up all the way to
+          packaged, asynchronous, cross-domain <code>require</code>s.
+        </p>
 
-<p>Yajsml is yet another (Common)JS module loader. It is a server-side component that allows JavaScript code to be distributed in a reliable and performant way. Its three features are:</p>
+        <h2>How it works</h2>
+        <p>
+          Yajsml sits between the client and an asset server and, depending,
+          transforms the requested resource. A basic request results in a simple
+          proxied response.
+        </p>
 
-<ul>
-<li>Proxy pass through for individual resource requests.</li>
-<li>Bulk responses for requests of closely associated resources (e.g. dependencies) when a request specifies a JSONP-style callback.</li>
-<li>Canonical packaged resources where requests for disparate resources may be fulfilled through a redirect to one canonical packaged resource (which exploits warmed caches).</li>
-</ul><p>The tool’s interface is simple enough that there is no need for a prescribed implementation on the client-side. That said, the <a href="https://github.com/cweider/require-kernel">require-kernel</a> is a terse implementation of a CommonJS module manager that can use all the features in Yajsml.</p>
-
-<h2>License</h2>
-
-<p>Released under the MIT license.</p>
-
-<pre><code>Copyright (c) 2011 Chad Weider
-
-Permission is hereby granted, free of charge, to any person obtaining a
-copy of this software and associated documentation files (the "Software"),
-to deal in the Software without restriction, including without limitation
-the rights to use, copy, modify, merge, publish, distribute, sublicense,
-and/or sell copies of the Software, and to permit persons to whom the
-Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
+  <pre><code>&gt; GET /javascripts/src/app.js HTTP/1.1
+&lt; HTTP/1.1 200 OK
+&lt;
+/* app.js */
+exports.message = &quot;I am the app.&quot;;
 </code></pre>
+
+        <p>
+          The magic happens when a <code>callback</code> parameter is provided.
+          These requests receive a <a href="http://en.wikipedia.org/wiki/JSONP">JSONP</a>-style
+          response containing a CommonJS module definition. Right out of the
+          box, this enables cross-domain loading. In addition, if a packaging
+          is provided, the response may contain multiple resources.
+        </p>
+
+  <pre><code>&gt; GET /javascripts/src/app.js?callback=require.define HTTP/1.1
+&lt; HTTP/1.1 200 OK
+&lt;
+require.define({
+  &quot;/app&quot;: null
+, &quot;/app.js&quot;: function (require, exports, module) {
+    /* app.js */
+    exports.message = &quot;I am the app.&quot;;
+  }
+, &quot;/controller&quot;: null
+, &quot;/controller.js&quot;: function (require, exports, module) {
+    /* controller.js */
+    exports.message = &quot;I usually needed when the app is needed.&quot;;
+  }
+});
+</code></pre>
+
+        <p>
+          Yajsml is also very mindful of caching. Every optimization to the
+          caching of the assets backing the service will improve the service’s
+          output transparently.
+        </p>
+
+        <h4>Canonical Resources</h4>
+        <p>
+          Yajsml also implements an additional optimization when packaging
+          resources. If a package consists of, say, <code>1.js</code>,
+          <code>2.js</code>, and <code>3.js</code> requests for either
+          <code>2.js</code> or <code>3.js</code>’s package will receive a
+          response redirecting to the “canonical resource” of <code>1.js</code>.
+        </p>
+        <p>
+          Redirecting to canonical resources has the benefit of both eliminating
+          dead weight in responses and exploiting the cache, particularly in
+          cases where asynchronous loading is preformed – and module loading
+          order would be undefined.
+        </p>
+
+        <h2>Interface</h2>
+        <h3>Server</h3>
+        <p>
+          Setup is trivial. provide a path to listen at and a URI to retrieve
+          the assets from (http, https, or file) and you’re good to go.
+        </p>
+
+  <pre><code>var http = require('http');
+var Server = require('yajsml').Server;
+var server = new Server({
+  rootPath: '/javascripts/src'
+, rootURI: 'http://static.example.com/js/src'
+});
+
+http.createServer(server).listen(3000);
+</code></pre>
+
+        <h3>Client</h3>
+        <p>
+          While not necessary, the <a href="https://github.com/cweider/require-kernel">require-kernel</a>
+          is a free to use reference implementation of a client for this interface.
+        </p>
       </section>
 
-    </div>
+      <hr />
+
+      <section>
+        <h2>An Example</h2>
+        <p>
+          The built-in <a href="https://github.com/cweider/yajsml/tree/master/example">example</a>
+          is a small server that builds packages directly from <a href="http://github.com">GitHub</a>.
+        </p>
+      </section>
+
+      <hr />
+
+      <section>
+      <h2>License</h2>
+      <p>Released under the MIT license.</p>
+  <pre><code>Copyright (c) 2012 Chad Weider
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+  </code></pre>
+      </section>
+
+  	</div>
+
     <!--[if !IE]><script>fixScale(document);</script><!--<![endif]-->
     
   </body>
