@@ -416,6 +416,7 @@ Server.prototype = new function () {
         }
         location += '?' + require('querystring').stringify(url.query);
 
+        // TODO: Caching headers?
         response.writeHead(307, {
           'Content-Type': 'text/plain; charset=utf-8'
         , 'Location': location
@@ -430,6 +431,7 @@ Server.prototype = new function () {
         return self._resourceURIForModulePath(modulePath);
       });
 
+      // TODO: Uh, conditional GET?
       requestURIs(resourceURIs, 'HEAD', requestHeaders,
         function (statuss, headerss, contents) {
           var status = statuss.reduce(function (m, s) {
