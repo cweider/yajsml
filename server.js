@@ -411,7 +411,7 @@ Server.prototype = new function () {
         } else {
           location = relativePath(
             location
-          , path.split('/').slice(0,-1).join('/')
+          , path.split('/').join('/')
           );
         }
         location += '?' + require('querystring').stringify(url.query);
