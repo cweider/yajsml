@@ -270,6 +270,12 @@ function Server(options) {
   if (options.baseURI) {
     this._baseURI = trailingSlash(options.baseURI);
   }
+
+  // Some clients insist on transforming values, but cannot run transformation
+  // on a separate service. This enables a workaround #hack.
+  if (options.requestURIs) {
+    this._requestURIs = options.requestURIs;
+  }
 }
 Server.prototype = new function () {
   function _resourceURIForModulePath(path) {
@@ -285,6 +291,8 @@ Server.prototype = new function () {
   }
 
   function handle(request, response, next) {
+    var requestURIs = this._requestURIs || requestURIs; // Hack, see above.
+
     var url = require('url').parse(request.url, true);
     var path = normalizePath(url.pathname);
 
