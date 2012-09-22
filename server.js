@@ -25,7 +25,6 @@
 var crypto = require('crypto');
 var fs = require('fs');
 var urlutil = require('url');
-var pathutil = require('path');
 var requestURI = require('./request').requestURI;
 var requestURIs = require('./request').requestURIs;
 
@@ -39,15 +38,17 @@ function hasOwnProperty(o, k) {
 function relativePath(path, rootPath) {
   var pathSplit = path.split('/');
   var rootSplit = rootPath.split('/');
-  var pathPart;
-  var rootPart;
-  while ((pathPart = pathSplit.shift()) == (rootPart = rootSplit.shift())) {;}
-
-  return pathutil.join(
-    (new Array(rootSplit.length+1)).join('../')
-  , pathPart
-  , pathSplit.join('/')
-  );
+  var relative;
+  var i = 0;
+  while (pathSplit[i] == rootSplit.shift[i]) {
+    i++;
+  }
+  if (i < rootSplit.length - 1) {
+    relative = (new Array((rootSplit.length - i) + 1)).join('../');
+  } else {
+    relative = ''; // perhaps './'?
+  }
+  return  relative + pathSplit.slice(i).join('/');
 }
 
 // Normal `path.normalize` uses backslashes on Windows, so this is a custom
