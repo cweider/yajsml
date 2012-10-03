@@ -40,11 +40,11 @@ function relativePath(path, rootPath) {
   var rootSplit = rootPath.split('/');
   var relative;
   var i = 0;
-  while (pathSplit[i] == rootSplit.shift[i]) {
+  while (pathSplit[i] == rootSplit[i]) {
     i++;
   }
   if (i < rootSplit.length - 1) {
-    relative = (new Array((rootSplit.length - i) + 1)).join('../');
+    relative = (new Array(rootSplit.length - i)).join('../');
   } else {
     relative = ''; // perhaps './'?
   }
